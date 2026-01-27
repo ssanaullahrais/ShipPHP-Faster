@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/ssanaullahrais/ShipPHP-Faster?style=flat-square)](https://github.com/ssanaullahrais/ShipPHP-Faster/blob/main/LICENSE)
 [![PHP Version](https://img.shields.io/packagist/php-v/shipphp/faster?style=flat-square)](https://packagist.org/packages/shipphp/faster)
 
-![ShipPHP Faster Screenshot](/images/screenshot.png)
+![ShipPHP Faster Screenshot](screenshot.png)
 
 **The Easiest Way to Deploy Your PHP Website - Now with Global Installation & Profile Management!**
 
