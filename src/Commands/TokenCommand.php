@@ -12,7 +12,7 @@ class TokenCommand extends BaseCommand
 {
     public function execute($options)
     {
-        $action = $options[0] ?? 'show';
+        $action = $options['args'][0] ?? 'show';
 
         switch ($action) {
             case 'show':

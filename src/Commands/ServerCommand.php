@@ -12,7 +12,7 @@ class ServerCommand extends BaseCommand
 {
     public function execute($options)
     {
-        $action = $options[0] ?? 'generate';
+        $action = $options['args'][0] ?? 'generate';
 
         if ($action === 'generate') {
             $this->generate($options);

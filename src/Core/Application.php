@@ -93,14 +93,76 @@ class Application
 
         // Execute command
         if (isset($this->commands[$command])) {
-            $commandClass = $this->commands[$command];
-            $commandInstance = new $commandClass($this->output);
-            $commandInstance->execute($options);
+            try {
+                $commandClass = $this->commands[$command];
+                $commandInstance = new $commandClass($this->output);
+                $commandInstance->execute($options);
+            } catch (\Exception $e) {
+                // Catch exceptions and show friendly error messages
+                $this->handleCommandError($e, $command);
+            }
         } else {
             $this->output->error("Unknown command: {$command}");
             $this->output->writeln("\nRun 'shipphp help' to see available commands.\n");
             exit(1);
         }
+    }
+
+    /**
+     * Handle command execution errors with friendly messages
+     */
+    private function handleCommandError(\Exception $e, $command)
+    {
+        $message = $e->getMessage();
+        $cmd = SHIPPHP_COMMAND;
+
+        $this->output->writeln("");
+
+        // Check if it's an initialization error
+        if (strpos($message, 'not initialized') !== false) {
+            $this->output->writeln("╔════════════════════════════════════════════════════════════╗", 'yellow');
+            $this->output->writeln("║  ⚠ Project Not Initialized                                ║", 'yellow');
+            $this->output->writeln("╚════════════════════════════════════════════════════════════╝", 'yellow');
+            $this->output->writeln("");
+            $this->output->writeln("This directory is not set up for ShipPHP yet.", 'yellow');
+            $this->output->writeln("");
+            $this->output->writeln($this->output->colorize("Choose one of these options:", 'cyan'));
+            $this->output->writeln("");
+            $this->output->writeln("  1️⃣  " . $this->output->colorize("Create new project configuration:", 'white'));
+            $this->output->writeln("     " . $this->output->colorize("{$cmd} init", 'green'));
+            $this->output->writeln("     (Creates new shipphp.json and server file)");
+            $this->output->writeln("");
+            $this->output->writeln("  2️⃣  " . $this->output->colorize("Connect to existing profile:", 'white'));
+            $this->output->writeln("     " . $this->output->colorize("{$cmd} login", 'green'));
+            $this->output->writeln("     (Links this directory to a global profile)");
+            $this->output->writeln("");
+            $this->output->writeln("  3️⃣  " . $this->output->colorize("View your profiles:", 'white'));
+            $this->output->writeln("     " . $this->output->colorize("{$cmd} profile list", 'green'));
+            $this->output->writeln("");
+
+        } else if (strpos($message, 'Server configuration incomplete') !== false) {
+            $this->output->writeln("╔════════════════════════════════════════════════════════════╗", 'red');
+            $this->output->writeln("║  ✗ Server Configuration Incomplete                        ║", 'red');
+            $this->output->writeln("╚════════════════════════════════════════════════════════════╝", 'red');
+            $this->output->writeln("");
+            $this->output->writeln("Your shipphp.json is missing server URL or token.", 'red');
+            $this->output->writeln("");
+            $this->output->writeln($this->output->colorize("To fix this:", 'cyan'));
+            $this->output->writeln("  1. Run " . $this->output->colorize("{$cmd} init", 'green') . " to reconfigure");
+            $this->output->writeln("  2. Or manually edit your shipphp.json file");
+            $this->output->writeln("");
+
+        } else {
+            // Generic error display
+            $this->output->writeln("╔════════════════════════════════════════════════════════════╗", 'red');
+            $this->output->writeln("║  ✗ Error                                                  ║", 'red');
+            $this->output->writeln("╚════════════════════════════════════════════════════════════╝", 'red');
+            $this->output->writeln("");
+            $this->output->error($message);
+            $this->output->writeln("");
+        }
+
+        exit(1);
     }
 
     /**
