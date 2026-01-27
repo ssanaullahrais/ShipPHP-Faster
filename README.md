@@ -38,6 +38,11 @@ shipphp init
 shipphp push
 ```
 
+**How to uninstall/remove? Use this:**
+```bash
+composer global remove shipphp/faster
+```
+
 **Requirements:** PHP 7.4+ and Composer
 
 ---
