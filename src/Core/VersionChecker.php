@@ -39,25 +39,14 @@ class VersionChecker
      */
     public static function checkForUpdate()
     {
-        self::init();
-
-        // Check cache first
-        $cached = self::getCached();
-        if ($cached !== null) {
-            return $cached;
-        }
-
-        // Fetch from GitHub API
         try {
             $latestVersion = self::fetchLatestVersion();
 
             if ($latestVersion && version_compare($latestVersion['version'], SHIPPHP_VERSION, '>')) {
                 // New version available
-                self::saveCache($latestVersion);
                 return $latestVersion;
             } else {
                 // No update available
-                self::saveCache(null);
                 return null;
             }
         } catch (\Exception $e) {
