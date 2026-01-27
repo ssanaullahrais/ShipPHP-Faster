@@ -1,7 +1,6 @@
 # ShipPHP Faster - The Easiest Way to Deploy Your PHP Website!
 
 [![Latest Version](https://img.shields.io/packagist/v/shipphp/faster?style=flat-square)](https://packagist.org/packages/shipphp/faster)
-[![Total Downloads](https://img.shields.io/packagist/dt/shipphp/faster?style=flat-square)](https://packagist.org/packages/shipphp/faster)
 [![License](https://img.shields.io/packagist/l/shipphp/faster?style=flat-square)](https://github.com/ssanaullahrais/ShipPHP-Faster/blob/main/LICENSE)
 [![PHP Version](https://img.shields.io/packagist/php-v/shipphp/faster?style=flat-square)](https://packagist.org/packages/shipphp/faster)
 
