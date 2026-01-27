@@ -218,6 +218,6 @@ class VersionChecker
         }
 
         // For local installations, provide direct instructions
-        return 'cd shipphp && git pull && cd ..';
+        return 'composer global update shipphp/faster';
     }
 }
