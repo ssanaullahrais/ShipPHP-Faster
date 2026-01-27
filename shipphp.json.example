@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "serverUrl": "https://example.com/shipphp-server.php",
   "token": "CHANGE_ME_RUN_SHIPPHP_INIT_TO_GENERATE_SECURE_TOKEN",
   "deleteOnPush": false,
@@ -52,3 +52,4 @@
     "allowedExtensions": []
   }
 }
+

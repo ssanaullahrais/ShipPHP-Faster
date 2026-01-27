@@ -21,18 +21,6 @@ class BackupCommand extends BaseCommand
         // Get subcommand
         $subcommand = $options['args'][0] ?? 'list';
 
-        // Check if first pull has been completed (except for list command)
-        if ($subcommand !== 'list' && !$this->state->hasCompletedFirstPull()) {
-            $this->output->error("Backup functionality is not yet available");
-            $this->output->writeln();
-            $this->output->writeln("You must complete your first successful pull before creating backups.");
-            $this->output->writeln();
-            $this->output->info("Run this command to enable backups:");
-            $this->output->writeln("  " . $this->cmd("pull"));
-            $this->output->writeln();
-            return;
-        }
-
         switch ($subcommand) {
             case 'create':
                 $this->createBackup($options);
@@ -83,6 +71,16 @@ class BackupCommand extends BaseCommand
         try {
             // Create local backup
             $backupId = $this->backup->createLocal();
+
+            // Check if backup was actually created (returns null if no files)
+            if ($backupId === null) {
+                $this->output->info("We don't see any files here yet.");
+                $this->output->writeln();
+                $this->output->writeln("Make sure you have project files to backup.");
+                $this->output->writeln("Files in .gitignore and .ignore are automatically excluded.");
+                $this->output->writeln();
+                return;
+            }
 
             // If --server flag, upload to server
             if (isset($options['flags']['server'])) {

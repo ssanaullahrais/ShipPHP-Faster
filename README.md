@@ -1,4 +1,4 @@
-# ShipPHP Faster - The Easiest Way to Deploy Your PHP Website!
+﻿# ShipPHP Faster - The Easiest Way to Deploy Your PHP Website!
 
 [![Latest Version](https://img.shields.io/packagist/v/shipphp/faster?style=flat-square)](https://packagist.org/packages/shipphp/faster)
 [![License](https://img.shields.io/github/license/ssanaullahrais/ShipPHP-Faster?style=flat-square)](https://github.com/ssanaullahrais/ShipPHP-Faster/blob/main/LICENSE)
@@ -165,7 +165,7 @@ shipphp
 
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-║            🚀 ShipPHP Faster v1.0.0                        ║
+║            🚀 ShipPHP Faster v2.0.0                        ║
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
 
@@ -197,7 +197,7 @@ ShipPHP automatically checks for new releases and notifies you when updates are 
 
 ```bash
 shipphp --version
-✓ ShipPHP Faster v1.0.0
+✓ ShipPHP Faster v2.0.0
 ```
 
 #### Git-like Status Command
@@ -336,7 +336,7 @@ shipphp sync                    # Status + Push (with confirmation)
 
 ### Backup Management (Version-Tracked)
 ```bash
-shipphp backup create                    # Create versioned local backup (v1.0.0, v1.0.1, etc.)
+shipphp backup create                    # Create versioned local backup (v2.0.0, v2.0.1, etc.)
 shipphp backup create --server           # Create and upload to server
 shipphp backup restore <id>              # Restore from local backup
 shipphp backup restore <id> --server     # Download and restore from server
@@ -480,13 +480,13 @@ shipphp push
 Every backup gets an automatic semantic version:
 
 ```bash
-shipphp backup create    # Creates: 2026-01-27-143022-v1.0.0
-shipphp backup create    # Creates: 2026-01-27-143155-v1.0.1
-shipphp backup create    # Creates: 2026-01-27-143301-v1.0.2
+shipphp backup create    # Creates: 2026-01-27-143022-v2.0.0
+shipphp backup create    # Creates: 2026-01-27-143155-v2.0.1
+shipphp backup create    # Creates: 2026-01-27-143301-v2.0.2
 ```
 
 ### Backup Features
-- **Automatic versioning** (v1.0.0, v1.0.1, v1.0.2...)
+- **Automatic versioning** (v2.0.0, v2.0.1, v2.0.2...)
 - **Version history tracking** (`.versions.json`)
 - **Local & server sync** (upload/download backups)
 - **Respects .gitignore** (only backs up relevant files)
@@ -510,7 +510,7 @@ shipphp backup stats                    # Compare local vs server backups
 ### shipphp.json (Local Project Config)
 ```json
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "projectName": "My Blog",
   "profileId": "myblog-com-a3f9",
   "serverUrl": "https://myblog.com/shipphp-server.php",

@@ -40,7 +40,7 @@ class ProfileManager
             self::save([
                 'profiles' => [],
                 'default' => null,
-                'version' => '1.0.0'
+                'version' => '2.0.0'
             ]);
         }
     }
@@ -285,7 +285,7 @@ class ProfileManager
             return [
                 'profiles' => [],
                 'default' => null,
-                'version' => '1.0.0'
+                'version' => '2.0.0'
             ];
         }
 
@@ -357,3 +357,4 @@ class ProfileManager
         return $profileId;
     }
 }
+

@@ -5,7 +5,7 @@
  * Upload this file to your web server and configure the token
  * DO NOT commit this file with your actual token
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @security This file implements multiple layers of security
  */
 
@@ -159,7 +159,7 @@ class ShipPHPServer
     {
         $this->success('Connection successful!', [
             'server' => 'ShipPHP Server',
-            'version' => '1.0.0',
+            'version' => '2.0.0',
             'php' => PHP_VERSION,
             'backups' => ENABLE_BACKUPS
         ]);
@@ -250,7 +250,7 @@ class ShipPHPServer
     private function actionInfo()
     {
         $this->success('Server info', [
-            'version' => '1.0.0',
+            'version' => '2.0.0',
             'php' => PHP_VERSION,
             'diskSpace' => disk_free_space($this->baseDir),
             'diskTotal' => disk_total_space($this->baseDir),
@@ -1105,3 +1105,4 @@ class ShipPHPServer
 // Run the server
 $server = new ShipPHPServer();
 $server->handle();
+

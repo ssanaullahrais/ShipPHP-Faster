@@ -1,4 +1,4 @@
-# CLAUDE.md
+﻿# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -125,7 +125,7 @@ Generated during `init`, stores all project configuration:
 
 ```json
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "serverUrl": "https://example.com/shipphp-server.php",
   "token": "64-character-hexadecimal-token",
   "deleteOnPush": false,
@@ -212,22 +212,22 @@ Files are excluded from sync if:
 
 **Manual Backup Creation:**
 - Backups are created on-demand using `backup create` command
-- Each backup gets an automatic semantic version (v1.0.0, v1.0.1, v1.0.2, etc.)
+- Each backup gets an automatic semantic version (v2.0.0, v2.0.1, v2.0.2, etc.)
 - Versions increment automatically with each new backup
 - No automatic backups - full control over when backups are created
 
 **Backup Storage:**
 - Local: `/backup/` directory in project root
 - Each backup is in a timestamped + versioned directory
-- Format: `YYYY-MM-DD-HHMMSS-vX.X.X` (e.g., `2026-01-27-143022-v1.0.0`)
+- Format: `YYYY-MM-DD-HHMMSS-vX.X.X` (e.g., `2026-01-27-143022-v2.0.0`)
 - Includes `manifest.json` with metadata
 - Version tracking stored in `/backup/.versions.json`
 
 **Backup Manifest:**
 ```json
 {
-  "id": "2026-01-27-143022-v1.0.0",
-  "version": "v1.0.0",
+  "id": "2026-01-27-143022-v2.0.0",
+  "version": "v2.0.0",
   "created": "2026-01-27T14:30:22+00:00",
   "fileCount": 42,
   "totalSize": 1048576,
@@ -262,19 +262,19 @@ Shows all local backups with version numbers, file counts, and sizes.
 
 **Restore from Local Backup:**
 ```bash
-shipphp backup restore 2026-01-27-143022-v1.0.0
+shipphp backup restore 2026-01-27-143022-v2.0.0
 ```
 Restores all files from the specified backup (with confirmation).
 
 **Download and Restore from Server:**
 ```bash
-shipphp backup restore 2026-01-27-143022-v1.0.0 --server
+shipphp backup restore 2026-01-27-143022-v2.0.0 --server
 ```
 Downloads backup from server first, then restores it locally.
 
 **Sync Specific Backup to Server:**
 ```bash
-shipphp backup sync 2026-01-27-143022-v1.0.0
+shipphp backup sync 2026-01-27-143022-v2.0.0
 ```
 Uploads a specific backup to the server.
 
@@ -286,7 +286,7 @@ Uploads all local backups to the server for safekeeping.
 
 ### Version Tracking Features
 
-- **Automatic versioning**: Starts at v1.0.0, increments patch version automatically
+- **Automatic versioning**: Starts at v2.0.0, increments patch version automatically
 - **Version history**: `.versions.json` tracks all backup versions
 - **Easy identification**: Version in directory name for quick reference
 - **Independent local/server**: Can maintain different backups locally vs. server
@@ -522,7 +522,7 @@ class MyCommand extends BaseCommand
 
 ### Backup.php Management
 
-- **Version tracking**: Automatic semantic versioning (v1.0.0, v1.0.1, etc.)
+- **Version tracking**: Automatic semantic versioning (v2.0.0, v2.0.1, etc.)
 - **Local backups**: Stored in `/backup/` directory
 - **Manifest system**: JSON metadata for each backup with version info
 - **Server sync**: Upload/download backups to/from server

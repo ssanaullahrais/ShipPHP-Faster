@@ -6,7 +6,7 @@
  * A Git-like deployment tool for PHP projects with backup support
  * Works with shared hosting, VPS, and any PHP environment
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @author ShipPHP Team
  * @license MIT
  */
@@ -21,7 +21,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 // Define constants
-define('SHIPPHP_VERSION', '1.0.0');
+define('SHIPPHP_VERSION', '2.0.0');
 define('SHIPPHP_ROOT', __DIR__);
 define('WORKING_DIR', getcwd());
 
@@ -71,3 +71,4 @@ try {
     echo "\n";
     exit(1);
 }
+
