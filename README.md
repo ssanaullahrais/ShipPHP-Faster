@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/packagist/l/shipphp/faster?style=flat-square)](https://github.com/ssanaullahrais/ShipPHP-Faster/blob/main/LICENSE)
 [![PHP Version](https://img.shields.io/packagist/php-v/shipphp/faster?style=flat-square)](https://packagist.org/packages/shipphp/faster)
 
+
 **The Easiest Way to Deploy Your PHP Website - Now with Global Installation & Profile Management!**
 
 ShipPHP Faster is your all-in-one deployment toolkit for PHP websites designed to eliminate slow, risky manual uploads and messy FTP work forever. With a single command, you can push your latest changes to the server, pull updates down, check your deployment status, and instantly roll back or restore previous versions thanks to automatic version-tracked backups.
