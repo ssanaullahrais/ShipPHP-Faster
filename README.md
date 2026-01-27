@@ -87,7 +87,7 @@ my-website/
 **Create a shortcut command:**
 ```bash
 cd /path/to/my-website
-php shipphp/faster.php bootstrap ship
+php shipphp/shipphp.php bootstrap ship
 
 # Now use shorter commands:
 php ship init
@@ -653,13 +653,13 @@ git clone https://github.com/ssanaullahrais/ShipPHP-Faster.git shipphp
 cd /path/to/your/website
 
 # 3. Initialize
-php shipphp/faster.php init
+php shipphp/shipphp.php init
 
 # 4. Upload shipphp-server.php to your server
 
 # 5. Deploy!
-php shipphp/faster.php login
-php shipphp/faster.php push
+php shipphp/shipphp.php login
+php shipphp/shipphp.php push
 ```
 
 **Welcome to professional PHP deployment!** 🎉
