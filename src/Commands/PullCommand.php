@@ -144,38 +144,6 @@ class PullCommand extends BaseCommand
 
         $this->output->writeln();
 
-        // Create backup if enabled - ALWAYS create backup before pull (even if empty)
-        $backupId = null;
-        if ($this->config->get('backup.beforePull') && !$skipBackup) {
-            try {
-                // Backup ALL current local files (to capture complete state before pull)
-                $filesToBackup = [];
-                foreach ($currentFiles as $file => $hash) {
-                    if (file_exists(WORKING_DIR . '/' . $file)) {
-                        $filesToBackup[] = $file;
-                    }
-                }
-
-                // Always create backup - even if empty (represents "state before pull")
-                $fileCount = count($filesToBackup);
-                if ($fileCount > 0) {
-                    $this->output->info("Creating backup of {$fileCount} files before pull...");
-                } else {
-                    $this->output->info("Creating backup (current state: empty) before pull...");
-                }
-                // Pass currentFiles so backup uses fresh scanned state, not stored state
-                $backupId = $this->backup->createLocal('before-pull', $filesToBackup, $currentFiles);
-                $this->output->writeln();
-            } catch (\Exception $e) {
-                $this->output->warning("Backup failed: " . $e->getMessage());
-                if (!$this->output->confirm("Continue without backup?", false)) {
-                    $this->output->writeln("Pull cancelled.\n");
-                    return;
-                }
-                $this->output->writeln();
-            }
-        }
-
         // Download files
         $downloaded = 0;
         $failed = 0;
@@ -229,19 +197,7 @@ class PullCommand extends BaseCommand
             $this->output->writeln("  ✗ Failed: {$failed}", 'red');
         }
         $this->output->writeln(str_repeat("═", 60), 'cyan');
-
-        // Show undo/revert command if backup was created
-        if ($backupId) {
-            $this->output->writeln();
-            $this->output->writeln($this->output->colorize("💡 Oops! Need to UNDO? No stress, we got you covered:", 'yellow'));
-            $this->output->writeln();
-            $this->output->writeln("  " . $this->output->colorize($this->cmd("backup restore {$backupId}"), 'green'));
-            $this->output->writeln();
-            $this->output->writeln($this->output->colorize("  Just copy-paste the command above to revert everything! 🚀", 'dim'));
-            $this->output->writeln();
-        } else {
-            $this->output->writeln();
-        }
+        $this->output->writeln();
     }
 
     /**

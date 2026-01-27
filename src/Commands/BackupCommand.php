@@ -42,6 +42,10 @@ class BackupCommand extends BaseCommand
                 $this->restoreBackup($options);
                 break;
 
+            case 'restore-server':
+                $this->restoreServerBackup($options);
+                break;
+
             case 'sync':
                 $this->syncBackup($options);
                 break;
@@ -97,7 +101,7 @@ class BackupCommand extends BaseCommand
     }
 
     /**
-     * Restore backup
+     * Restore backup locally
      */
     private function restoreBackup($options)
     {
@@ -139,7 +143,7 @@ class BackupCommand extends BaseCommand
 
             // Confirm restore
             if (!isset($options['flags']['yes']) && !isset($options['flags']['y'])) {
-                $this->output->warning("⚠ This will overwrite current files with backup files!");
+                $this->output->warning("⚠ This will overwrite current local files with backup files!");
                 $confirm = $this->output->ask("Do you want to continue? (yes/no)", "no");
 
                 if (strtolower($confirm) !== 'yes') {
@@ -156,6 +160,129 @@ class BackupCommand extends BaseCommand
 
             $this->output->writeln();
             $this->output->success("Backup restored successfully!");
+        } catch (\Exception $e) {
+            $this->output->error($e->getMessage());
+            $this->output->writeln();
+        }
+    }
+
+    /**
+     * Restore backup on server (without downloading)
+     */
+    private function restoreServerBackup($options)
+    {
+        // Get backup ID
+        $backupId = $options['args'][1] ?? null;
+
+        if (!$backupId) {
+            $this->output->error("Please specify a backup ID");
+            $this->output->writeln("\nUsage: backup restore-server <backup-id> [--from-local]");
+            $this->output->writeln("\nOptions:");
+            $this->output->writeln("  --from-local    Upload local backup to server first, then restore it there");
+            $this->output->writeln();
+            return;
+        }
+
+        $this->header("Restore Backup on Server");
+
+        try {
+            $this->initApi();
+
+            $fromLocal = isset($options['flags']['from-local']);
+
+            if ($fromLocal) {
+                // Upload local backup to server and restore it there
+                $this->output->writeln($this->output->colorize("Mode: Upload from local and restore on server", 'cyan'));
+                $this->output->writeln();
+
+                // Check if backup exists locally
+                if (!$this->backup->backupExists($backupId)) {
+                    throw new \Exception("Backup not found locally: {$backupId}");
+                }
+
+                $backup = $this->backup->getBackup($backupId);
+
+                $this->output->writeln($this->output->colorize("Backup Details:", 'cyan'));
+                $this->output->writeln("  ID: {$backup['id']}");
+                $this->output->writeln("  Version: {$backup['version']}");
+                $this->output->writeln("  Created: {$backup['created']}");
+                $this->output->writeln("  Files: {$backup['fileCount']}");
+                $this->output->writeln("  Size: " . $this->backup->formatSize($backup['totalSize']));
+                $this->output->writeln();
+
+                // Confirm
+                if (!isset($options['flags']['yes']) && !isset($options['flags']['y'])) {
+                    $this->output->warning("⚠ This will overwrite server files with this backup!");
+                    $confirm = $this->output->ask("Do you want to continue? (yes/no)", "no");
+
+                    if (strtolower($confirm) !== 'yes') {
+                        $this->output->info("Restore cancelled");
+                        $this->output->writeln();
+                        return;
+                    }
+                }
+
+                $this->output->writeln();
+
+                // Upload and restore
+                $this->backup->uploadAndRestoreOnServer($backupId, $this->api);
+            } else {
+                // Restore from backup already on server
+                $this->output->writeln($this->output->colorize("Mode: Restore from server backup", 'cyan'));
+                $this->output->writeln();
+
+                // Get server backup list to verify it exists
+                $this->output->write("Fetching server backup list... ");
+                $serverBackups = $this->backup->listServer($this->api);
+                $this->output->success("Done");
+                $this->output->writeln();
+
+                $backupExists = false;
+                $backup = null;
+                foreach ($serverBackups as $serverBackup) {
+                    if ($serverBackup['id'] === $backupId) {
+                        $backupExists = true;
+                        $backup = $serverBackup;
+                        break;
+                    }
+                }
+
+                if (!$backupExists) {
+                    throw new \Exception("Backup not found on server: {$backupId}");
+                }
+
+                $this->output->writeln($this->output->colorize("Backup Details:", 'cyan'));
+                $this->output->writeln("  ID: {$backup['id']}");
+                $this->output->writeln("  Version: {$backup['version']}");
+                $this->output->writeln("  Created: " . date('Y-m-d H:i:s', strtotime($backup['created'])));
+                $this->output->writeln("  Files: {$backup['fileCount']}");
+                $this->output->writeln("  Size: " . $this->backup->formatSize($backup['size'] ?? $backup['totalSize'] ?? 0));
+                $this->output->writeln();
+
+                // Confirm
+                if (!isset($options['flags']['yes']) && !isset($options['flags']['y'])) {
+                    $this->output->warning("⚠ This will restore the server files from this backup!");
+                    $this->output->writeln("   The server will create a safety backup before restoring.");
+                    $this->output->writeln();
+                    $confirm = $this->output->ask("Do you want to continue? (yes/no)", "no");
+
+                    if (strtolower($confirm) !== 'yes') {
+                        $this->output->info("Restore cancelled");
+                        $this->output->writeln();
+                        return;
+                    }
+                }
+
+                $this->output->writeln();
+
+                // Restore on server
+                $this->backup->restoreOnServer($backupId, $this->api);
+            }
+
+            $this->output->writeln();
+            $this->output->success("Server restore completed!");
+            $this->output->writeln();
+
         } catch (\Exception $e) {
             $this->output->error($e->getMessage());
             $this->output->writeln();
@@ -356,18 +483,20 @@ class BackupCommand extends BaseCommand
             $this->output->table($headers, $rows);
 
             $this->output->writeln($this->output->colorize("Commands:", 'cyan'));
-            $this->output->writeln("  backup restore <id>          Restore from local backup");
-            $this->output->writeln("  backup restore <id> --server Download and restore from server");
-            $this->output->writeln("  backup sync <id>             Upload backup to server");
-            $this->output->writeln("  backup sync --all            Upload all backups to server");
-            $this->output->writeln("  backup pull <id>             Download backup from server");
-            $this->output->writeln("  backup pull --all            Download all backups from server");
-            $this->output->writeln("  backup delete <id>           Delete specific backup");
-            $this->output->writeln("  backup delete <id> --local   Delete from local only");
-            $this->output->writeln("  backup delete <id> --server  Delete from server only");
-            $this->output->writeln("  backup delete <id> --both    Delete from both local and server");
-            $this->output->writeln("  backup delete --all          Delete all backups (with confirmation)");
-            $this->output->writeln("  backup stats                 Show backup comparison table");
+            $this->output->writeln("  backup restore <id>                 Restore from local backup");
+            $this->output->writeln("  backup restore <id> --server        Download and restore from server");
+            $this->output->writeln("  backup restore-server <id>          Restore server files from server backup");
+            $this->output->writeln("  backup restore-server <id> --from-local  Upload local backup & restore on server");
+            $this->output->writeln("  backup sync <id>                    Upload backup to server");
+            $this->output->writeln("  backup sync --all                   Upload all backups to server");
+            $this->output->writeln("  backup pull <id>                    Download backup from server");
+            $this->output->writeln("  backup pull --all                   Download all backups from server");
+            $this->output->writeln("  backup delete <id>                  Delete specific backup");
+            $this->output->writeln("  backup delete <id> --local          Delete from local only");
+            $this->output->writeln("  backup delete <id> --server         Delete from server only");
+            $this->output->writeln("  backup delete <id> --both           Delete from both local and server");
+            $this->output->writeln("  backup delete --all                 Delete all backups (with confirmation)");
+            $this->output->writeln("  backup stats                        Show backup comparison table");
             $this->output->writeln();
         } catch (\Exception $e) {
             $this->output->error($e->getMessage());

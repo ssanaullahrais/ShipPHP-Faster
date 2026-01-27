@@ -176,29 +176,6 @@ class PushCommand extends BaseCommand
 
         $this->output->writeln();
 
-        // Create backup if enabled - only backup files that will be pushed
-        $backupId = null;
-        if ($this->config->get('backup.beforePush') && !$skipBackup) {
-            try {
-                // Backup only files that will be uploaded (not deleted files)
-                $filesToBackup = $diff['toUpload'];
-
-                if (!empty($filesToBackup)) {
-                    $this->output->info("Creating backup of " . count($filesToBackup) . " files before push...");
-                    // Pass currentFiles so backup uses fresh scanned state, not stored state
-                    $backupId = $this->backup->createLocal('before-push', $filesToBackup, $currentFiles);
-                    $this->output->writeln();
-                }
-            } catch (\Exception $e) {
-                $this->output->warning("Backup failed: " . $e->getMessage());
-                if (!$this->output->confirm("Continue without backup?", false)) {
-                    $this->output->writeln("Push cancelled.\n");
-                    return;
-                }
-                $this->output->writeln();
-            }
-        }
-
         // Upload files
         $uploaded = 0;
         $failed = 0;
@@ -274,19 +251,7 @@ class PushCommand extends BaseCommand
             $this->output->writeln("  ✗ Failed: {$failed}", 'red');
         }
         $this->output->writeln(str_repeat("═", 60), 'cyan');
-
-        // Show undo/revert command if backup was created
-        if ($backupId) {
-            $this->output->writeln();
-            $this->output->writeln($this->output->colorize("💡 Oops! Need to UNDO? No stress, we got you covered:", 'yellow'));
-            $this->output->writeln();
-            $this->output->writeln("  " . $this->output->colorize($this->cmd("backup restore {$backupId}"), 'green'));
-            $this->output->writeln();
-            $this->output->writeln($this->output->colorize("  Just copy-paste the command above to revert everything! 🚀", 'dim'));
-            $this->output->writeln();
-        } else {
-            $this->output->writeln();
-        }
+        $this->output->writeln();
     }
 
     /**

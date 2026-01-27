@@ -5,8 +5,6 @@
   "deleteOnPush": false,
   "backup": {
     "enabled": true,
-    "beforePush": true,
-    "beforePull": false,
     "keepLast": 10,
     "autoClean": true
   },

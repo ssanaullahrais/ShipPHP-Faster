@@ -415,6 +415,43 @@ class Backup
     }
 
     /**
+     * Restore backup on server (without downloading)
+     * This restores a backup that's already on the server directly on the server
+     */
+    public function restoreOnServer($backupId, ApiClient $api)
+    {
+        try {
+            $result = $api->restoreBackup($backupId);
+
+            $this->output->success("Backup restored on server successfully!");
+            $this->output->writeln("The server files have been restored from backup: {$backupId}");
+
+            return $result;
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to restore backup on server: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload local backup to server and restore it there
+     * This uploads a backup from local, then restores it on the server
+     */
+    public function uploadAndRestoreOnServer($backupId, ApiClient $api)
+    {
+        // First, upload the backup to server
+        $this->output->info("Uploading backup to server...");
+        $this->uploadToServer($backupId, $api);
+
+        $this->output->writeln();
+
+        // Then, restore it on the server
+        $this->output->info("Restoring backup on server...");
+        $this->output->writeln();
+
+        return $this->restoreOnServer($backupId, $api);
+    }
+
+    /**
      * Recursively delete directory
      */
     private function deleteDirectory($dir)

@@ -228,6 +228,7 @@ class VersionChecker
             return 'composer global update shipphp/faster';
         }
 
-        return 'git pull origin main';
+        // For local installations, provide direct instructions
+        return 'cd shipphp && git pull && cd ..';
     }
 }
