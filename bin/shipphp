@@ -1,0 +1,50 @@
+#!/usr/bin/env php
+<?php
+/**
+ * ShipPHP Faster - Global Binary Wrapper
+ *
+ * This file is used when ShipPHP is installed globally via Composer
+ */
+
+// Find the autoloader
+$autoloadPaths = [
+    __DIR__ . '/../vendor/autoload.php',     // When installed as dependency
+    __DIR__ . '/../../../autoload.php',       // When installed globally
+];
+
+$autoloaded = false;
+foreach ($autoloadPaths as $path) {
+    if (file_exists($path)) {
+        require_once $path;
+        $autoloaded = true;
+        break;
+    }
+}
+
+// If no Composer autoloader found, use our standalone autoloader
+if (!$autoloaded) {
+    require_once __DIR__ . '/../shipphp.php';
+    exit;
+}
+
+// Define constants
+define('SHIPPHP_VERSION', '1.0.0');
+define('SHIPPHP_ROOT', dirname(__DIR__));
+define('WORKING_DIR', getcwd());
+define('SHIPPHP_COMMAND', 'shipphp');
+
+// Load our autoloader
+spl_autoload_register(function ($class) {
+    if (strpos($class, 'ShipPHP\\') !== 0) {
+        return;
+    }
+
+    $file = SHIPPHP_ROOT . '/src/' . str_replace('\\', '/', substr($class, 8)) . '.php';
+    if (file_exists($file)) {
+        require_once $file;
+    }
+});
+
+// Run the application
+$app = new ShipPHP\Core\Application();
+$app->run($argv);

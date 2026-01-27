@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "serverUrl": "https://example.com/shipphp-server.php",
+  "token": "CHANGE_ME_RUN_SHIPPHP_INIT_TO_GENERATE_SECURE_TOKEN",
+  "deleteOnPush": false,
+  "backup": {
+    "enabled": true,
+    "beforePush": true,
+    "beforePull": false,
+    "keepLast": 10,
+    "autoClean": true
+  },
+  "ignore": [
+    ".git",
+    ".gitignore",
+    ".shipphp",
+    "shipphp.json",
+    "shipphp-server.php",
+    ".env",
+    ".env.local",
+    ".env.*.local",
+    "node_modules",
+    "vendor",
+    ".vscode",
+    ".idea",
+    "*.log",
+    ".DS_Store",
+    "Thumbs.db",
+    "cache",
+    "tmp",
+    "temp"
+  ],
+  "environments": {
+    "production": {
+      "serverUrl": "https://yoursite.com/shipphp-server.php",
+      "token": "your-production-token-here",
+      "deleteOnPush": false
+    },
+    "staging": {
+      "serverUrl": "https://staging.yoursite.com/shipphp-server.php",
+      "token": "your-staging-token-here",
+      "deleteOnPush": true
+    },
+    "development": {
+      "serverUrl": "http://localhost/shipphp-server.php",
+      "token": "your-dev-token-here",
+      "deleteOnPush": true
+    }
+  },
+  "currentEnv": "production",
+  "security": {
+    "validateFileTypes": true,
+    "maxFileSize": 104857600,
+    "allowedExtensions": []
+  }
+}

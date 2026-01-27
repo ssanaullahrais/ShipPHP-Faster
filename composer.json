@@ -1,0 +1,37 @@
+{
+    "name": "shipphp/faster",
+    "description": "Professional PHP deployment tool with git-like push/pull functionality, global installation, and profile management",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "deployment",
+        "deploy",
+        "sync",
+        "ftp",
+        "upload",
+        "git-deployment",
+        "php-deployment",
+        "profile-management",
+        "multi-project",
+        "backup",
+        "restore"
+    ],
+    "authors": [
+        {
+            "name": "ShipPHP Contributors"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "ShipPHP\\": "src/"
+        }
+    },
+    "bin": [
+        "bin/shipphp"
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

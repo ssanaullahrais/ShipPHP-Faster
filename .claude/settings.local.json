@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(php -l:*)",
+      "Bash(php:*)",
+      "Bash(php -l src/Core/State.php)",
+      "Bash(move shipphp-server.php templatesshipphp-server.template.php)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
