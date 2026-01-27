@@ -35,7 +35,6 @@ That's it! ShipPHP is now available globally. Use it from any project:
 ```bash
 cd /path/to/your/project
 shipphp init
-shipphp push
 ```
 
 **How to uninstall/remove? Use this:**
@@ -44,7 +43,6 @@ composer global remove shipphp/faster
 ```
 
 **Requirements:** PHP 7.4+ and Composer
-
 ---
 
 ### Alternative Installation Methods
@@ -114,11 +112,6 @@ php ship status
 ```bash
 # If using global installation:
 shipphp init
-
-# If using local installation:
-php shipphp/faster.php init
-# OR if you created bootstrap:
-php ship init
 ```
 
 **You'll be asked:**
