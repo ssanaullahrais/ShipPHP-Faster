@@ -29,18 +29,18 @@ class Backup
     private function getNextVersion()
     {
         if (!file_exists($this->versionsFile)) {
-            return 'v1.0.0';
+            return 'v2.0.0';
         }
 
         $versions = json_decode(file_get_contents($this->versionsFile), true);
         if (empty($versions)) {
-            return 'v1.0.0';
+            return 'v2.0.0';
         }
 
         // Get the latest version
         $latestVersion = end($versions)['version'];
 
-        // Parse version (v1.0.0 -> [1, 0, 0])
+        // Parse version (v2.0.0 -> [2, 0, 0])
         $parts = explode('.', substr($latestVersion, 1)); // Remove 'v' prefix
         $major = intval($parts[0]);
         $minor = intval($parts[1]);
@@ -128,8 +128,11 @@ class Backup
         }
 
         if (empty($files)) {
-            // No files to backup
-            $this->output->info("No files to backup");
+            // No files to backup - clean up and return null
+            if (is_dir($backupPath)) {
+                rmdir($backupPath);
+            }
+            return null;
         }
 
         $copiedCount = 0;
@@ -285,14 +288,22 @@ class Backup
             return true;
         }
 
-        // HARDCODED: Always exclude common directories that should never be backed up
+        // HARDCODED: Always exclude common directories/files that should never be backed up
         $hardcodedExclusions = [
             'node_modules', 'vendor', '.git', '.svn', '.hg',
-            '.shipphp', 'backup', '.shipphp-backups'
+            '.shipphp', 'backup', '.shipphp-backups',
+            '.gitignore', '.ignore'
         ];
 
         foreach ($hardcodedExclusions as $exclusion) {
-            if (preg_match('#(^|/)' . preg_quote($exclusion, '#') . '(/|$)#i', $file)) {
+            // For files (starts with .), match exact filename
+            if (strpos($exclusion, '.') === 0 && strpos($exclusion, '/') === false) {
+                if (basename($file) === $exclusion) {
+                    return true;
+                }
+            }
+            // For directories, match path segment
+            elseif (preg_match('#(^|/)' . preg_quote($exclusion, '#') . '(/|$)#i', $file)) {
                 return true;
             }
         }
@@ -865,3 +876,4 @@ class Backup
         return implode(' ', $parts);
     }
 }
+

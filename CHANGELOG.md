@@ -1,11 +1,11 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to ShipPHP Faster will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-01-27 - Initial Public Release
+## [2.0.0] - 2026-01-27 - Initial Public Release
 
 **ShipPHP Faster** - A professional, git-like PHP deployment tool with global installation, profile management, and enterprise-grade security.
 
@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Server file regeneration** with new tokens
 
 #### Backup & Restore System
-- **Version-tracked backups** with semantic versioning (v1.0.0, v1.0.1, etc.)
+- **Version-tracked backups** with semantic versioning (v2.0.0, v2.0.1, etc.)
 - **Manual backup creation** with full control
 - **Local backup storage** in `/backup/` directory
 - **Server backup support** with sync capabilities
@@ -426,7 +426,7 @@ Contributions are welcome! Please read our contributing guidelines (coming soon)
 
 ---
 
-**ShipPHP Faster v1.0.0** - Production-Ready Deployment Framework
+**ShipPHP Faster v2.0.0** - Production-Ready Deployment Framework
 *Making PHP deployment simple, secure, and reliable.*
 
 Made with ❤️ for developers worldwide.
