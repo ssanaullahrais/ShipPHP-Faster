@@ -14,7 +14,7 @@ class Config
     private $configPath;
     private $config;
     private $defaultConfig = [
-        'version' => '2.0.0',
+        'version' => '2.1.0',
         'serverUrl' => '',
         'token' => '',
         'deleteOnPush' => false,

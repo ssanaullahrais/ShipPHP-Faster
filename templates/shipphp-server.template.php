@@ -5,7 +5,7 @@
  * Upload this file to your web server and configure the token
  * DO NOT commit this file with your actual token
  *
- * @version 2.0.0
+ * @version 2.1.0
  * @security This file implements multiple layers of security
  */
 
@@ -49,7 +49,7 @@ if (php_sapi_name() === 'cli') {
 
 // Set JSON response header
 header('Content-Type: application/json');
-header('X-ShipPHP-Version: 2.0.0');
+header('X-ShipPHP-Version: 2.1.0');
 
 // Security headers
 header('X-Content-Type-Options: nosniff');
@@ -167,7 +167,7 @@ class ShipPHPServer
     {
         $this->success('Connection successful!', [
             'server' => 'ShipPHP Server',
-            'version' => '2.0.0',
+            'version' => '2.1.0',
             'php' => PHP_VERSION,
             'backups' => ENABLE_BACKUPS
         ]);
@@ -258,7 +258,7 @@ class ShipPHPServer
     private function actionInfo()
     {
         $this->success('Server info', [
-            'version' => '2.0.0',
+            'version' => '2.1.0',
             'php' => PHP_VERSION,
             'diskSpace' => disk_free_space($this->baseDir),
             'diskTotal' => disk_total_space($this->baseDir),

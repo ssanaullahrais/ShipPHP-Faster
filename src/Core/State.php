@@ -47,7 +47,7 @@ class State
     {
         if (!file_exists($this->statePath)) {
             $this->state = [
-                'version' => '2.0.0',
+                'version' => '2.1.0',
                 'lastSync' => null,
                 'lastPush' => null,
                 'lastPull' => null,
@@ -461,7 +461,7 @@ class State
     public function reset()
     {
         $this->state = [
-            'version' => '2.0.0',
+            'version' => '2.1.0',
             'lastSync' => null,
             'lastPush' => null,
             'lastPull' => null,

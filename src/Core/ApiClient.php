@@ -361,9 +361,9 @@ class ApiClient
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_HTTPHEADER => [
-                'User-Agent: ShipPHP-Faster/2.0',
+                'User-Agent: ShipPHP-Faster/2.1.0',
                 'Accept: application/json',
-                'X-ShipPHP-Client-Version: 2.0.0'
+                'X-ShipPHP-Client-Version: 2.1.0'
             ]
         ];
 
