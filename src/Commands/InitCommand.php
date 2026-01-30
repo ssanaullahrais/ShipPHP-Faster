@@ -5,6 +5,7 @@ namespace ShipPHP\Commands;
 use ShipPHP\Core\Config;
 use ShipPHP\Core\State;
 use ShipPHP\Core\ProfileManager;
+use ShipPHP\Core\ProjectPaths;
 
 /**
  * Init Command
@@ -132,7 +133,7 @@ class InitCommand extends BaseCommand
                 ProfileManager::add($profileId, $profileData);
 
                 // Update local config with profileId
-                $configPath = WORKING_DIR . '/shipphp.json';
+                $configPath = ProjectPaths::configFile();
                 if (file_exists($configPath)) {
                     $currentConfig = json_decode(file_get_contents($configPath), true);
                     $currentConfig['projectName'] = $projectName;
@@ -251,7 +252,7 @@ class InitCommand extends BaseCommand
      */
     private function generateServerFile($token, $serverConfig = [])
     {
-        $serverFilePath = WORKING_DIR . '/shipphp-server.php';
+        $serverFilePath = ProjectPaths::serverFile();
         $templatePath = SHIPPHP_ROOT . '/templates/shipphp-server.template.php';
 
         if (!file_exists($templatePath)) {
@@ -328,6 +329,13 @@ class InitCommand extends BaseCommand
             }
         }
 
+        $serverDir = dirname($serverFilePath);
+        if (!is_dir($serverDir)) {
+            if (!mkdir($serverDir, 0755, true)) {
+                throw new \Exception("Failed to create configuration directory");
+            }
+        }
+
         // Write to project directory
         if (file_put_contents($serverFilePath, $content) === false) {
             throw new \Exception("Failed to generate server file");
@@ -341,10 +349,16 @@ class InitCommand extends BaseCommand
      */
     private function showNextSteps($token, $serverUrl, $serverConfig = [], $projectName = null, $profileId = null)
     {
+        $configDir = ProjectPaths::configDir();
+        $relativeConfigDir = str_replace(WORKING_DIR . '/', '', $configDir);
+        if ($relativeConfigDir === '') {
+            $relativeConfigDir = '.';
+        }
+
         $createdItems = "✓ Created .gitignore\n" .
-            "✓ Created .ignore\n" .
-            "✓ Created shipphp.json\n" .
-            "✓ Created .shipphp/ directory\n" .
+            "✓ Created {$relativeConfigDir}/.ignore\n" .
+            "✓ Created {$relativeConfigDir}/shipphp.json\n" .
+            "✓ Created {$relativeConfigDir}/.shipphp/ directory\n" .
             "✓ Generated secure token\n" .
             "✓ Generated shipphp-server.php (fully configured!)";
 
@@ -356,10 +370,10 @@ class InitCommand extends BaseCommand
 
         $this->output->writeln($this->output->colorize("📋 WHAT WE CREATED:", 'cyan'));
         $this->output->writeln("   • .gitignore (ignore patterns for Git)");
-        $this->output->writeln("   • .ignore (ShipPHP-specific ignore patterns)");
-        $this->output->writeln("   • shipphp.json (your config)");
-        $this->output->writeln("   • shipphp-server.php (ready to upload!)");
-        $this->output->writeln("   • .shipphp/ (tracking directory)");
+        $this->output->writeln("   • {$relativeConfigDir}/.ignore (ShipPHP-specific ignore patterns)");
+        $this->output->writeln("   • {$relativeConfigDir}/shipphp.json (your config)");
+        $this->output->writeln("   • {$relativeConfigDir}/shipphp-server.php (ready to upload!)");
+        $this->output->writeln("   • {$relativeConfigDir}/.shipphp/ (tracking directory)");
 
         if ($profileId) {
             $this->output->writeln("   • Global profile: {$profileId} (saved in ~/.shipphp/)");
@@ -399,7 +413,7 @@ class InitCommand extends BaseCommand
         $this->output->writeln($this->output->colorize("💾 LOCAL BACKUPS:", 'cyan'));
         $this->output->writeln("   • Automatic backups: Enabled (before every push and pull)");
         $this->output->writeln("   • Backup retention: 100 backups (auto-cleanup)");
-        $this->output->writeln("   • Location: .shipphp/backups/");
+        $this->output->writeln("   • Location: {$relativeConfigDir}/.shipphp/backups/");
         $this->output->writeln();
 
         // Only show bootstrap tip if using full path
@@ -416,7 +430,7 @@ class InitCommand extends BaseCommand
         $this->output->writeln();
 
         $this->output->writeln("1. " . $this->output->colorize("Upload shipphp-server.php", 'cyan'));
-        $this->output->writeln("   📁 File is here: " . $this->output->colorize(basename(WORKING_DIR) . '/shipphp-server.php', 'white'));
+        $this->output->writeln("   📁 File is here: " . $this->output->colorize(ProjectPaths::serverFile(), 'white'));
         $this->output->writeln("   🌐 Upload to: " . $this->output->colorize($serverUrl, 'white'));
         $this->output->writeln("   💡 All settings are already configured - just upload!");
         $this->output->writeln();

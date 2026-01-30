@@ -4,6 +4,7 @@ namespace ShipPHP\Commands;
 
 use ShipPHP\Core\ProfileManager;
 use ShipPHP\Core\ApiClient;
+use ShipPHP\Core\ProjectPaths;
 
 /**
  * Login Command
@@ -85,8 +86,9 @@ class LoginCommand extends BaseCommand
      */
     private function isProjectInitialized()
     {
-        return is_dir(WORKING_DIR . '/.shipphp') ||
-               file_exists(WORKING_DIR . '/.shipphp/shipphp.json');
+        $configFile = ProjectPaths::configFile();
+        $stateDir = ProjectPaths::stateDir();
+        return file_exists($configFile) || is_dir($stateDir);
     }
 
     /**
@@ -160,8 +162,8 @@ class LoginCommand extends BaseCommand
      */
     private function linkToProfile($profileName)
     {
-        $shipphpDir = WORKING_DIR . '/.shipphp';
-        $linkFile = $shipphpDir . '/profile.link';
+        $shipphpDir = ProjectPaths::stateDir();
+        $linkFile = ProjectPaths::linkFile();
 
         // Create .shipphp directory if needed
         if (!is_dir($shipphpDir)) {

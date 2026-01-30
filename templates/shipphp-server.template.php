@@ -132,6 +132,10 @@ class ShipPHPServer
                     $this->actionExtract();
                     break;
 
+                case 'where':
+                    $this->actionWhere();
+                    break;
+
                 case 'backup':
                     $this->actionBackup();
                     break;
@@ -398,6 +402,16 @@ class ShipPHPServer
             'content' => base64_encode($content),
             'hash' => $hash,
             'size' => $fileSize
+        ]);
+    }
+
+    /**
+     * Show server base directory
+     */
+    private function actionWhere()
+    {
+        $this->success('Server base directory', [
+            'baseDir' => $this->baseDir
         ]);
     }
 
@@ -921,6 +935,7 @@ class ShipPHPServer
             // Skip ShipPHP files and directory
             if (strpos($relativePath, '.shipphp') === 0 ||
                 strpos($relativePath, 'shipphp/') === 0 ||
+                strpos($relativePath, 'shipphp-config/') === 0 ||
                 strpos($relativePath, 'shipphp-server.php') !== false ||
                 $relativePath === 'shipphp' ||
                 $relativePath === 'shipphp.php') {

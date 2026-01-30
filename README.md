@@ -322,6 +322,8 @@ shipphp bootstrap [path]        # Create short command alias
 shipphp env [name]              # Switch environments (staging/production)
 ```
 
+> **Config directory:** New installs place ShipPHP config and state inside `shipphp-config/` (including `shipphp.json`, `.ignore`, `.shipphp/`, and `shipphp-server.php`) to keep project roots clean. Legacy installs that already use root-level `shipphp.json` remain supported.
+
 ### Deployment
 ```bash
 shipphp                         # Smart dashboard (quick start guide)
@@ -330,7 +332,19 @@ shipphp status --detailed       # Detailed status with diagnostics
 shipphp push [path]             # Upload changed files to server
 shipphp pull [path]             # Download changed files from server
 shipphp sync                    # Status + Push (with confirmation)
+shipphp push local.php --to=public/index.php   # Upload a file to a specific server path
+shipphp pull public/index.php --to=local.php   # Download a server file to a specific local path
 ```
+
+### Utilities
+```bash
+shipphp tree [path]             # Display a tree of server files
+shipphp delete <path>           # Delete a file or directory on the server
+shipphp extract <file.zip>      # Extract a zip archive on the server
+shipphp extract <file.zip> --to=public/uploads  # Extract to a target directory
+shipphp where                   # Show server base directory
+```
+> Note: `extract` currently supports `.zip` archives (via PHP's ZipArchive).
 
 ### Utilities
 ```bash

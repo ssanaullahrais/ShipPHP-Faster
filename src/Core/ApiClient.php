@@ -211,6 +211,20 @@ class ApiClient
     }
 
     /**
+     * Get server base directory
+     */
+    public function where()
+    {
+        $response = $this->request('where', []);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Where request failed');
+        }
+
+        return $response;
+    }
+
+    /**
      * Create backup on server
      */
     public function createBackup($backupId)

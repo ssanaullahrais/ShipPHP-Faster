@@ -3,6 +3,7 @@
 namespace ShipPHP\Core;
 
 use ShipPHP\Security\Security;
+use ShipPHP\Core\ProjectPaths;
 
 /**
  * Configuration Manager
@@ -22,6 +23,8 @@ class Config
             '.gitignore',
             '.ignore',
             '.shipphp',
+            'shipphp-config',
+            'shipphp-config/.shipphp',
             'backup',
             'shipphp.json',
             'shipphp-server.php',
@@ -59,7 +62,7 @@ class Config
     public function __construct($workingDir = null)
     {
         $workingDir = $workingDir ?: WORKING_DIR;
-        $this->configPath = $workingDir . '/shipphp.json';
+        $this->configPath = ProjectPaths::configFile($workingDir);
         $this->load();
     }
 
@@ -93,7 +96,7 @@ class Config
      */
     private function loadGitignore()
     {
-        $gitignorePath = dirname($this->configPath) . '/.gitignore';
+        $gitignorePath = WORKING_DIR . '/.gitignore';
 
         if (!file_exists($gitignorePath)) {
             return;
@@ -125,7 +128,7 @@ class Config
      */
     private function loadIgnoreFile()
     {
-        $ignorePath = dirname($this->configPath) . '/.ignore';
+        $ignorePath = ProjectPaths::ignoreFile();
 
         if (!file_exists($ignorePath)) {
             return;
@@ -158,6 +161,13 @@ class Config
     public function save()
     {
         $json = json_encode($this->config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+        $configDir = dirname($this->configPath);
+        if (!is_dir($configDir)) {
+            if (!mkdir($configDir, 0755, true)) {
+                throw new \Exception("Failed to create configuration directory");
+            }
+        }
 
         if (file_put_contents($this->configPath, $json) === false) {
             throw new \Exception("Failed to write shipphp.json");
@@ -370,10 +380,11 @@ class Config
      */
     public function generateGitignore()
     {
-        $gitignorePath = dirname($this->configPath) . '/.gitignore';
+        $gitignorePath = WORKING_DIR . '/.gitignore';
 
         $content = <<<'GITIGNORE'
 # ShipPHP files
+shipphp-config/
 .shipphp/
 shipphp.json
 shipphp-server.php
@@ -433,7 +444,14 @@ GITIGNORE;
      */
     public function generateIgnoreFile()
     {
-        $ignorePath = dirname($this->configPath) . '/.ignore';
+        $ignorePath = ProjectPaths::ignoreFile();
+        $ignoreDir = dirname($ignorePath);
+
+        if (!is_dir($ignoreDir)) {
+            if (!mkdir($ignoreDir, 0755, true)) {
+                throw new \Exception("Failed to create configuration directory");
+            }
+        }
 
         $content = <<<'IGNORE'
 # ShipPHP-specific ignore patterns
@@ -446,6 +464,7 @@ backup/
 # ShipPHP internal files
 .shipphp/
 shipphp/
+shipphp-config/
 
 # Add your custom patterns below:
 # example:
@@ -515,4 +534,3 @@ IGNORE;
         return $this->configPath;
     }
 }
-
