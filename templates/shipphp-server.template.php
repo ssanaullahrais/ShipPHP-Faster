@@ -128,6 +128,10 @@ class ShipPHPServer
                     $this->actionDelete();
                     break;
 
+                case 'extract':
+                    $this->actionExtract();
+                    break;
+
                 case 'backup':
                     $this->actionBackup();
                     break;
@@ -394,6 +398,144 @@ class ShipPHPServer
             'content' => base64_encode($content),
             'hash' => $hash,
             'size' => $fileSize
+        ]);
+    }
+
+    /**
+     * Extract zip archive
+     */
+    private function actionExtract()
+    {
+        $path = $_POST['path'] ?? '';
+        $destination = $_POST['destination'] ?? '';
+        $overwrite = !empty($_POST['overwrite']);
+
+        $this->validatePath($path);
+        if (!empty($destination)) {
+            $this->validatePath($destination);
+        }
+
+        $fullPath = $this->baseDir . '/' . $path;
+
+        if (!file_exists($fullPath)) {
+            throw new Exception('Archive not found');
+        }
+
+        if (!is_file($fullPath)) {
+            throw new Exception('Archive path is not a file');
+        }
+
+        $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        if ($extension !== 'zip') {
+            throw new Exception('Only .zip archives can be extracted');
+        }
+
+        if (!class_exists('ZipArchive')) {
+            throw new Exception('ZipArchive extension is required on the server');
+        }
+
+        $targetDir = $destination !== '' ? $destination : dirname($path);
+        $targetDir = rtrim($targetDir, '/');
+        if ($targetDir === '' || $targetDir === '.') {
+            $targetDir = '';
+        }
+
+        $extractPath = $this->baseDir . ($targetDir !== '' ? '/' . $targetDir : '');
+
+        if (!is_dir($extractPath)) {
+            if (!mkdir($extractPath, 0755, true)) {
+                throw new Exception('Failed to create extraction directory');
+            }
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($fullPath) !== true) {
+            throw new Exception('Failed to open zip archive');
+        }
+
+        $conflicts = [];
+        $entries = [];
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entry = $zip->getNameIndex($i);
+            if ($entry === false) {
+                continue;
+            }
+
+            $entry = str_replace('\\', '/', $entry);
+            if (strpos($entry, '../') !== false || strpos($entry, '..\\') !== false || strpos($entry, '..') !== false) {
+                $zip->close();
+                throw new Exception('Archive contains invalid paths');
+            }
+
+            if (strpos($entry, ':') !== false || strpos($entry, '/') === 0) {
+                $zip->close();
+                throw new Exception('Archive contains absolute paths');
+            }
+
+            $entries[] = $entry;
+
+            $destinationPath = $extractPath . '/' . $entry;
+            if (is_file($destinationPath) && !$overwrite) {
+                $conflicts[] = $entry;
+            }
+
+            $stat = $zip->statIndex($i);
+            if ($stat && isset($stat['size']) && $stat['size'] > MAX_FILE_SIZE) {
+                $zip->close();
+                throw new Exception('Archive entry too large: ' . $entry);
+            }
+        }
+
+        if (!empty($conflicts)) {
+            $zip->close();
+            throw new Exception('Extraction would overwrite existing files. Use --force to overwrite.');
+        }
+
+        $extracted = 0;
+        foreach ($entries as $entry) {
+            if (substr($entry, -1) === '/') {
+                $dirPath = $extractPath . '/' . rtrim($entry, '/');
+                if (!is_dir($dirPath)) {
+                    mkdir($dirPath, 0755, true);
+                }
+                continue;
+            }
+
+            $destinationPath = $extractPath . '/' . $entry;
+            $entryDir = dirname($destinationPath);
+            if (!is_dir($entryDir)) {
+                if (!mkdir($entryDir, 0755, true)) {
+                    $zip->close();
+                    throw new Exception('Failed to create directory for extraction');
+                }
+            }
+
+            $stream = $zip->getStream($entry);
+            if (!$stream) {
+                $zip->close();
+                throw new Exception('Failed to read archive entry');
+            }
+
+            $contents = stream_get_contents($stream);
+            fclose($stream);
+
+            if (file_put_contents($destinationPath, $contents) === false) {
+                $zip->close();
+                throw new Exception('Failed to write extracted file');
+            }
+
+            $extracted++;
+        }
+
+        $zip->close();
+
+        $this->log("Extracted: {$path} to {$targetDir}");
+
+        $this->success('Archive extracted', [
+            'archive' => $path,
+            'destination' => $targetDir !== '' ? $targetDir : '.',
+            'extracted' => $extracted
         ]);
     }
 
@@ -1105,4 +1247,3 @@ class ShipPHPServer
 // Run the server
 $server = new ShipPHPServer();
 $server->handle();
-

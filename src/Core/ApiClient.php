@@ -187,6 +187,30 @@ class ApiClient
     }
 
     /**
+     * Extract archive on server
+     */
+    public function extractArchive($remotePath, $destination = null, $overwrite = false)
+    {
+        $payload = ['path' => $remotePath];
+
+        if ($destination) {
+            $payload['destination'] = $destination;
+        }
+
+        if ($overwrite) {
+            $payload['overwrite'] = 1;
+        }
+
+        $response = $this->request('extract', $payload);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Extract failed');
+        }
+
+        return $response;
+    }
+
+    /**
      * Create backup on server
      */
     public function createBackup($backupId)
