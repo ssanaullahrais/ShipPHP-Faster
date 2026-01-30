@@ -28,7 +28,7 @@ if (!$autoloaded) {
 }
 
 // Define constants
-define('SHIPPHP_VERSION', '2.0.0');
+define('SHIPPHP_VERSION', require dirname(__DIR__) . '/version.php'); // Keep CLI version in sync with package.
 define('SHIPPHP_ROOT', dirname(__DIR__));
 define('WORKING_DIR', getcwd());
 define('SHIPPHP_COMMAND', 'shipphp');
@@ -48,4 +48,3 @@ spl_autoload_register(function ($class) {
 // Run the application
 $app = new ShipPHP\Core\Application();
 $app->run($argv);
-
