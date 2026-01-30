@@ -346,6 +346,15 @@ shipphp where                   # Show server base directory
 ```
 > Note: `extract` currently supports `.zip` archives (via PHP's ZipArchive).
 
+### Utilities
+```bash
+shipphp tree [path]             # Display a tree of server files
+shipphp delete <path>           # Delete a file or directory on the server
+shipphp extract <file.zip>      # Extract a zip archive on the server
+shipphp extract <file.zip> --to=public/uploads  # Extract to a target directory
+```
+> Note: `extract` currently supports `.zip` archives (via PHP's ZipArchive).
+
 ### Backup Management (Version-Tracked)
 ```bash
 shipphp backup create                    # Create versioned local backup (v2.0.0, v2.0.1, etc.)
