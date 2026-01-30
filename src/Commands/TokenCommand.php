@@ -3,6 +3,7 @@
 namespace ShipPHP\Commands;
 
 use ShipPHP\Core\ProfileManager;
+use ShipPHP\Core\ProjectPaths;
 
 /**
  * Token Command
@@ -88,7 +89,7 @@ class TokenCommand extends BaseCommand
             $this->output->success("Done");
 
             // Get current config
-            $configFile = WORKING_DIR . '/shipphp.json';
+            $configFile = ProjectPaths::configFile();
             $config = json_decode(file_get_contents($configFile), true);
             $oldToken = $config['token'] ?? '';
 
@@ -104,7 +105,7 @@ class TokenCommand extends BaseCommand
             $this->output->success("Done");
 
             // Update profile if linked
-            $linkFile = WORKING_DIR . '/.shipphp/profile.link';
+            $linkFile = ProjectPaths::linkFile();
             if (file_exists($linkFile)) {
                 $profileName = trim(file_get_contents($linkFile));
                 $this->output->write("Updating global profile '{$profileName}'... ");
@@ -137,7 +138,7 @@ class TokenCommand extends BaseCommand
             $this->output->writeln();
             $this->output->box(
                 "⚠ IMPORTANT: Upload the new shipphp-server.php file!\n\n" .
-                "File location: " . basename(WORKING_DIR) . "/shipphp-server.php\n" .
+                "File location: " . ProjectPaths::serverFile() . "\n" .
                 "Upload to: " . ($config['serverUrl'] ?? 'your server') . "\n\n" .
                 "The old token will stop working after you upload the new file.",
                 'yellow'
@@ -153,7 +154,7 @@ class TokenCommand extends BaseCommand
      */
     private function regenerateServerFile($token, $config)
     {
-        $serverFilePath = WORKING_DIR . '/shipphp-server.php';
+        $serverFilePath = ProjectPaths::serverFile();
         $templatePath = SHIPPHP_ROOT . '/shipphp-server.php';
 
         if (!file_exists($templatePath)) {
@@ -205,6 +206,13 @@ class TokenCommand extends BaseCommand
                 "define('IP_WHITELIST', [{$ipsArray}]);",
                 $content
             );
+        }
+
+        $serverDir = dirname($serverFilePath);
+        if (!is_dir($serverDir)) {
+            if (!mkdir($serverDir, 0755, true)) {
+                throw new \Exception("Failed to create configuration directory");
+            }
         }
 
         // Write to project directory

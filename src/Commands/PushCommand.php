@@ -23,6 +23,7 @@ class PushCommand extends BaseCommand
 
         // Get specific file/directory to push (if provided)
         $specificPath = $this->getArg($options, 0);
+        $remoteOverride = $this->getParam($options, 'to');
 
         // Show status bar
         $this->showStatusBar();
@@ -38,6 +39,12 @@ class PushCommand extends BaseCommand
             $this->output->error("Connection failed");
             $this->output->writeln();
             $this->output->error($e->getMessage());
+            return;
+        }
+
+        // Direct push for a single file with remote override
+        if ($specificPath && $remoteOverride) {
+            $this->pushSingleFile($specificPath, $remoteOverride, $dryRun, $force);
             return;
         }
 
@@ -179,6 +186,7 @@ class PushCommand extends BaseCommand
         // Upload files
         $uploaded = 0;
         $failed = 0;
+        $failedUploads = [];
         $total = count($diff['toUpload']);
 
         if ($total > 0) {
@@ -202,6 +210,10 @@ class PushCommand extends BaseCommand
                     $uploaded++;
                 } catch (\Exception $e) {
                     $failed++;
+                    $failedUploads[] = [
+                        'file' => $file,
+                        'error' => $e->getMessage()
+                    ];
                 }
 
                 // Show progress
@@ -219,6 +231,7 @@ class PushCommand extends BaseCommand
 
         // Delete files from server
         $deleted = 0;
+        $failedDeletes = [];
         if ($deleteEnabled && count($diff['toDelete']) > 0) {
             $this->output->writeln($this->output->colorize("Deleting files from server:", 'yellow'));
 
@@ -227,10 +240,14 @@ class PushCommand extends BaseCommand
                 if (!$this->output->confirm("Are you sure?", false)) {
                     $this->output->writeln("Deletion skipped.\n");
                 } else {
-                    $deleted = $this->deleteFiles($diff['toDelete'], $force);
+                    $result = $this->deleteFiles($diff['toDelete'], $force);
+                    $deleted = $result['deleted'];
+                    $failedDeletes = $result['failed'];
                 }
             } else {
-                $deleted = $this->deleteFiles($diff['toDelete'], $force);
+                $result = $this->deleteFiles($diff['toDelete'], $force);
+                $deleted = $result['deleted'];
+                $failedDeletes = $result['failed'];
             }
         }
 
@@ -252,6 +269,24 @@ class PushCommand extends BaseCommand
         }
         $this->output->writeln(str_repeat("═", 60), 'cyan');
         $this->output->writeln();
+
+        if (!empty($failedUploads)) {
+            $this->output->writeln($this->output->colorize("Upload failures:", 'red'));
+            $rows = [];
+            foreach ($failedUploads as $failure) {
+                $rows[] = [$failure['file'], $failure['error']];
+            }
+            $this->output->table(['File', 'Error'], $rows);
+        }
+
+        if (!empty($failedDeletes)) {
+            $this->output->writeln($this->output->colorize("Delete failures:", 'red'));
+            $rows = [];
+            foreach ($failedDeletes as $failure) {
+                $rows[] = [$failure['file'], $failure['error']];
+            }
+            $this->output->table(['File', 'Error'], $rows);
+        }
     }
 
     /**
@@ -261,6 +296,7 @@ class PushCommand extends BaseCommand
     {
         $deleted = 0;
         $failed = 0;
+        $failedFiles = [];
         $total = count($files);
 
         $this->output->writeln("Total files: {$total}");
@@ -278,6 +314,10 @@ class PushCommand extends BaseCommand
                 $deleted++;
             } catch (\Exception $e) {
                 $failed++;
+                $failedFiles[] = [
+                    'file' => $file,
+                    'error' => $e->getMessage()
+                ];
             }
 
             // Show progress
@@ -292,7 +332,10 @@ class PushCommand extends BaseCommand
         $this->output->success("Completed in {$elapsed}s - Deleted: {$deleted}, Failed: {$failed}");
         $this->output->writeln();
 
-        return $deleted;
+        return [
+            'deleted' => $deleted,
+            'failed' => $failedFiles
+        ];
     }
 
     /**
@@ -344,5 +387,63 @@ class PushCommand extends BaseCommand
         }
 
         return false;
+    }
+
+    /**
+     * Push a single file to a specific remote path.
+     */
+    private function pushSingleFile($localPath, $remotePath, $dryRun, $force)
+    {
+        try {
+            $localPath = $this->normalizeRelativePath($localPath);
+            $remotePath = $this->normalizeRelativePath($remotePath);
+        } catch (\Exception $e) {
+            $this->output->error($e->getMessage());
+            return;
+        }
+
+        $fullLocalPath = WORKING_DIR . '/' . $localPath;
+
+        if (!is_file($fullLocalPath)) {
+            $this->output->error("Local file not found: {$localPath}");
+            return;
+        }
+
+        $this->output->writeln($this->output->colorize("Direct push:", 'cyan'));
+        $this->output->writeln("  Local:  {$localPath}");
+        $this->output->writeln("  Remote: {$remotePath}");
+        $this->output->writeln();
+
+        if ($dryRun) {
+            $this->output->info("Dry run: no changes were made.");
+            return;
+        }
+
+        if (!$force) {
+            if (!$this->output->confirm("Upload '{$localPath}' to '{$remotePath}'?", true)) {
+                $this->output->writeln("Push cancelled.\n");
+                return;
+            }
+        }
+
+        try {
+            $this->api->uploadFile($fullLocalPath, $remotePath);
+            $this->output->success("Uploaded '{$localPath}' → '{$remotePath}'");
+        } catch (\Exception $e) {
+            $this->output->error("Upload failed");
+            $this->output->writeln($e->getMessage());
+            return;
+        }
+
+        if ($localPath === $remotePath) {
+            $hash = Security::hashFile($fullLocalPath);
+            $this->state->setFileHash($localPath, $hash);
+            $this->state->setServerFileHash($localPath, $hash);
+            $this->state->save();
+        } else {
+            $this->output->warning("Note: remote path differs from local path; state tracking was not updated.");
+        }
+
+        $this->output->writeln();
     }
 }

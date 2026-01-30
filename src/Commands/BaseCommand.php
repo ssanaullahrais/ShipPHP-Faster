@@ -7,6 +7,7 @@ use ShipPHP\Core\State;
 use ShipPHP\Core\ApiClient;
 use ShipPHP\Core\Backup;
 use ShipPHP\Core\ProfileManager;
+use ShipPHP\Core\ProjectPaths;
 use ShipPHP\Helpers\Output;
 
 /**
@@ -242,7 +243,7 @@ abstract class BaseCommand
     protected function getCurrentProfile()
     {
         // Check for profile link first
-        $linkFile = WORKING_DIR . '/.shipphp/profile.link';
+        $linkFile = ProjectPaths::linkFile();
         if (file_exists($linkFile)) {
             $profileName = trim(file_get_contents($linkFile));
 
@@ -257,8 +258,9 @@ abstract class BaseCommand
         }
 
         // Fall back to local config
-        if (file_exists(WORKING_DIR . '/.shipphp/shipphp.json')) {
-            $config = json_decode(file_get_contents(WORKING_DIR . '/.shipphp/shipphp.json'), true);
+        $configFile = ProjectPaths::configFile();
+        if (file_exists($configFile)) {
+            $config = json_decode(file_get_contents($configFile), true);
             if ($config) {
                 $config['_source'] = 'local';
                 return $config;
@@ -319,6 +321,29 @@ abstract class BaseCommand
         $this->output->writeln($statusLine, 'green');
         $this->output->writeln("╚══════════════════════════════════════════════════════════════════════════════════════════════════════════╝", 'green');
         $this->output->writeln();
+    }
+
+    /**
+     * Normalize and validate a relative path (no absolute paths or traversal).
+     */
+    protected function normalizeRelativePath($path)
+    {
+        $path = str_replace('\\', '/', $path);
+        $path = trim($path);
+
+        if ($path === '') {
+            throw new \Exception('Path cannot be empty');
+        }
+
+        if (preg_match('#^([A-Za-z]:)?/#', $path)) {
+            throw new \Exception('Absolute paths are not allowed');
+        }
+
+        if (strpos($path, '..') !== false) {
+            throw new \Exception('Path traversal is not allowed');
+        }
+
+        return ltrim($path, '/');
     }
 
     /**
