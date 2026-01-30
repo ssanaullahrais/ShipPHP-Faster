@@ -17,8 +17,13 @@ use ShipPHP\Commands\TokenCommand;
 use ShipPHP\Commands\ProfileCommand;
 use ShipPHP\Commands\ServerCommand;
 use ShipPHP\Commands\InstallCommand;
+use ShipPHP\Commands\TreeCommand;
+use ShipPHP\Commands\DeleteCommand;
+use ShipPHP\Commands\ExtractCommand;
+use ShipPHP\Commands\WhereCommand;
 use ShipPHP\Helpers\Output;
 use ShipPHP\Core\VersionChecker;
+use ShipPHP\Core\ProjectPaths;
 
 /**
  * Main Application Class
@@ -56,6 +61,10 @@ class Application
             'profile' => ProfileCommand::class,
             'server' => ServerCommand::class,
             'install' => InstallCommand::class,
+            'tree' => TreeCommand::class,
+            'delete' => DeleteCommand::class,
+            'extract' => ExtractCommand::class,
+            'where' => WhereCommand::class,
         ];
     }
 
@@ -214,7 +223,7 @@ class Application
         // Check installation status
         $installType = VersionChecker::getInstallationType();
         $isGlobal = ($installType === 'global');
-        $isInitialized = file_exists(WORKING_DIR . '/shipphp.json');
+        $isInitialized = file_exists(ProjectPaths::configFile());
 
         $this->output->writeln($this->output->colorize("STATUS", 'cyan'));
         $this->output->writeln("  Installation:  " . ($isGlobal ? $this->output->colorize("✓ Global", 'green') : $this->output->colorize("○ Local", 'yellow')));
@@ -350,6 +359,10 @@ class Application
         $this->output->writeln($this->output->colorize("  Utilities:", 'yellow'));
         $this->output->writeln("    health            Check server health and diagnostics");
         $this->output->writeln("    diff [file]       Show differences for specific file");
+        $this->output->writeln("    tree [path]       Show server file tree");
+        $this->output->writeln("    delete <path>     Delete a file or directory on the server");
+        $this->output->writeln("    extract <zip>     Extract a zip archive on the server");
+        $this->output->writeln("    where             Show server base directory");
         $this->output->writeln("");
         $this->output->writeln($this->output->colorize("OPTIONS:", 'cyan'));
         $this->output->writeln("    --help, -h        Show help information");
@@ -370,7 +383,9 @@ class Application
         $this->output->writeln("    {$cmd} push index.php         # Deploy specific file");
         $this->output->writeln("    {$cmd} push src/              # Deploy specific directory");
         $this->output->writeln("    {$cmd} push --dry-run         # Preview push");
+        $this->output->writeln("    {$cmd} push local.php --to=public/index.php   # Push to specific server path");
         $this->output->writeln("    {$cmd} pull                   # Download changes");
+        $this->output->writeln("    {$cmd} pull public/index.php --to=local.php   # Pull to specific local path");
         $this->output->writeln("    {$cmd} backup                 # List all backups");
         $this->output->writeln("    {$cmd} backup create          # Create local backup");
         $this->output->writeln("    {$cmd} backup create --server # Create and upload to server");
@@ -379,6 +394,11 @@ class Application
         $this->output->writeln("    {$cmd} backup pull --all      # Download all backups from server");
         $this->output->writeln("    {$cmd} backup delete <id> --both  # Delete backup from local & server");
         $this->output->writeln("    {$cmd} backup stats           # Show backup comparison table");
+        $this->output->writeln("    {$cmd} tree                   # Show server file tree");
+        $this->output->writeln("    {$cmd} tree public            # Show tree for a specific path");
+        $this->output->writeln("    {$cmd} delete public/cache    # Delete a server directory");
+        $this->output->writeln("    {$cmd} extract upload.zip     # Extract a zip archive on the server");
+        $this->output->writeln("    {$cmd} where                  # Show server base directory");
         $this->output->writeln("");
         $this->output->writeln($this->output->colorize("GETTING STARTED:", 'cyan'));
         $this->output->writeln("  1. Put shipphp/ folder in your project root");

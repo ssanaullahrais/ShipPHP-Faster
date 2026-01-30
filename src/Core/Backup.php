@@ -29,18 +29,18 @@ class Backup
     private function getNextVersion()
     {
         if (!file_exists($this->versionsFile)) {
-            return 'v2.0.0';
+            return 'v2.1.0';
         }
 
         $versions = json_decode(file_get_contents($this->versionsFile), true);
         if (empty($versions)) {
-            return 'v2.0.0';
+            return 'v2.1.0';
         }
 
         // Get the latest version
         $latestVersion = end($versions)['version'];
 
-        // Parse version (v2.0.0 -> [2, 0, 0])
+        // Parse version (v2.1.0 -> [2, 1, 0])
         $parts = explode('.', substr($latestVersion, 1)); // Remove 'v' prefix
         $major = intval($parts[0]);
         $minor = intval($parts[1]);
@@ -876,4 +876,3 @@ class Backup
         return implode(' ', $parts);
     }
 }
-

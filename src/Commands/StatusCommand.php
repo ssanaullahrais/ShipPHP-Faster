@@ -16,11 +16,6 @@ class StatusCommand extends BaseCommand
 
         $detailed = $this->hasFlag($options, 'detailed');
 
-        // Show status bar only if not initialized
-        if (!$this->state->hasCompletedFirstPull()) {
-            $this->showStatusBar();
-        }
-
         $this->header("ShipPHP Status");
 
         // Get environment
@@ -28,20 +23,36 @@ class StatusCommand extends BaseCommand
         $this->output->writeln("On branch: " . $this->output->colorize($env['name'], 'cyan'));
         $this->output->writeln();
 
-        // Show detailed connection info only with --detailed flag
-        if ($detailed) {
-            $this->output->write("Server: " . $env['serverUrl'] . " ");
-            try {
-                $this->api->test();
-                $this->output->success("Connected");
-            } catch (\Exception $e) {
-                $this->output->error("Connection failed");
-                $this->output->writeln();
-                $this->output->error($e->getMessage());
-                return;
-            }
+        $this->output->write("Testing connection... ");
+        try {
+            $this->api->test();
+            $this->output->success("Connected");
+        } catch (\Exception $e) {
+            $this->output->error("Connection failed");
             $this->output->writeln();
+            $this->output->error($e->getMessage());
+            return;
         }
+        $this->output->writeln();
+
+        $profile = $this->getCurrentProfile();
+        if (!$profile) {
+            $this->output->error("No active profile found. Run '" . $this->cmd('login') . "' to link a profile.");
+            return;
+        }
+
+        $profileName = $profile['_profileName'] ?? $profile['profileId'] ?? 'local';
+        $token = $profile['token'] ?? '';
+        $tokenPreview = $token ? substr($token, 0, 6) . '...' . substr($token, -3) : 'none';
+
+        $this->output->table(
+            ['Profile', 'Server', 'Token'],
+            [[
+                $profileName,
+                $env['serverUrl'],
+                $tokenPreview
+            ]]
+        );
 
         // Scan files (show progress only in detailed mode)
         if ($detailed) {
@@ -86,48 +97,44 @@ class StatusCommand extends BaseCommand
         $totalToPull = count($diff['toDownload']);
         $totalConflicts = count($diff['conflicts']);
 
-        // Show changes to push
-        $this->output->writeln($this->output->colorize("Changes to push", 'cyan') . " (local → server):");
+        $this->showChangesTable(
+            "Changes to push (local → server)",
+            [
+                ['Added', $changes['new']],
+                ['Modified', $changes['modified']],
+                ['Deleted', $changes['deleted']]
+            ],
+            20
+        );
 
-        if ($totalToPush > 0) {
-            $this->showFileGroup($changes['new'], '+', 'added', 'green', $detailed);
-            $this->showFileGroup($changes['modified'], 'M', 'modified', 'yellow', $detailed);
-            $this->showFileGroup($changes['deleted'], '-', 'deleted', 'red', $detailed);
-        } else {
-            $this->output->writeln("  " . $this->output->colorize("✓ No changes", 'green'));
-        }
+        $this->showChangesTable(
+            "Changes to pull (server → local)",
+            [
+                ['Added on server', $diff['toDownload']]
+            ],
+            20
+        );
 
-        $this->output->writeln();
-
-        // Show changes to pull
-        $this->output->writeln($this->output->colorize("Changes to pull", 'cyan') . " (server → local):");
-
-        if ($totalToPull > 0) {
-            $this->showFileGroup($diff['toDownload'], '+', 'added on server', 'magenta', $detailed);
-        } else {
-            $this->output->writeln("  " . $this->output->colorize("✓ No changes", 'green'));
-        }
-
-        $this->output->writeln();
-
-        // Show conflicts if any
         if ($totalConflicts > 0) {
-            $this->output->writeln($this->output->colorize("⚠ Conflicts", 'yellow') . " (modified on both sides):");
-            $this->showFileGroup($diff['conflicts'], '⚠', 'conflicting', 'yellow', true); // Always show conflicts
-            $this->output->writeln();
+            $this->showChangesTable(
+                "Conflicts (modified on both sides)",
+                [
+                    ['Conflict', $diff['conflicts']]
+                ],
+                20
+            );
         }
 
         // Summary section
         $this->output->writeln(str_repeat('─', 60));
-        $this->output->writeln($this->output->colorize("Summary:", 'cyan'));
-        $this->output->writeln("  {$totalToPush} files to push");
-        $this->output->writeln("  {$totalToPull} files to pull");
-
+        $summaryRows = [
+            ['To push', (string)$totalToPush],
+            ['To pull', (string)$totalToPull]
+        ];
         if ($totalConflicts > 0) {
-            $this->output->writeln("  " . $this->output->colorize("{$totalConflicts} conflicts", 'yellow'));
+            $summaryRows[] = ['Conflicts', (string)$totalConflicts];
         }
-
-        $this->output->writeln();
+        $this->output->table(['Summary', 'Count'], $summaryRows);
 
         // Show warnings and next steps
         $this->showNextSteps($totalToPush, $totalToPull, $totalConflicts);
@@ -143,30 +150,36 @@ class StatusCommand extends BaseCommand
         }
     }
 
-    /**
-     * Show a group of files with consistent formatting
-     */
-    private function showFileGroup($files, $symbol, $label, $color, $detailed)
+    private function showChangesTable($title, $groups, $limit)
     {
-        if (empty($files)) {
+        $this->output->writeln($this->output->colorize($title . ':', 'cyan'));
+
+        $rows = [];
+        $total = 0;
+
+        foreach ($groups as $group) {
+            [$label, $files] = $group;
+            $total += count($files);
+            foreach ($files as $file) {
+                if (count($rows) >= $limit) {
+                    break 2;
+                }
+                $rows[] = [$label, $file];
+            }
+        }
+
+        if ($total === 0) {
+            $this->output->writeln("  " . $this->output->colorize("✓ No changes", 'green'));
+            $this->output->writeln();
             return;
         }
 
-        $count = count($files);
-        $this->output->writeln("  {$symbol} {$count} " . ($count === 1 ? rtrim($label, 's') : $label), $color);
+        $this->output->table(['Type', 'File'], $rows);
 
-        // Show individual files if detailed OR <= 5 files
-        if ($detailed || $count <= 5) {
-            foreach ($files as $file) {
-                $this->output->writeln("    {$symbol} {$file}", $color);
-            }
-        } elseif ($count > 5) {
-            // Show first 3 files
-            for ($i = 0; $i < 3; $i++) {
-                $this->output->writeln("    {$symbol} {$files[$i]}", $color);
-            }
-            $remaining = $count - 3;
-            $this->output->writeln("    " . $this->output->colorize("... and {$remaining} more", 'dim'));
+        if ($total > $limit) {
+            $remaining = $total - $limit;
+            $this->output->writeln($this->output->colorize("... and {$remaining} more", 'dim'));
+            $this->output->writeln();
         }
     }
 

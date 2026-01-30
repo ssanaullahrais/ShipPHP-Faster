@@ -3,6 +3,7 @@
 namespace ShipPHP\Core;
 
 use ShipPHP\Security\Security;
+use ShipPHP\Core\ProjectPaths;
 
 /**
  * State Manager
@@ -17,8 +18,8 @@ class State
     public function __construct($workingDir = null)
     {
         $workingDir = $workingDir ?: WORKING_DIR;
-        $this->stateDir = $workingDir . '/.shipphp';
-        $this->statePath = $this->stateDir . '/state.json';
+        $this->stateDir = ProjectPaths::stateDir($workingDir);
+        $this->statePath = ProjectPaths::stateFile($workingDir);
         $this->ensureStateDir();
         $this->load();
     }
@@ -46,7 +47,7 @@ class State
     {
         if (!file_exists($this->statePath)) {
             $this->state = [
-                'version' => '2.0.0',
+                'version' => '2.1.0',
                 'lastSync' => null,
                 'lastPush' => null,
                 'lastPull' => null,
@@ -460,7 +461,7 @@ class State
     public function reset()
     {
         $this->state = [
-            'version' => '2.0.0',
+            'version' => '2.1.0',
             'lastSync' => null,
             'lastPush' => null,
             'lastPull' => null,
@@ -472,4 +473,3 @@ class State
         return $this;
     }
 }
-

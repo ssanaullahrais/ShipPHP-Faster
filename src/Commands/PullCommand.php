@@ -23,6 +23,8 @@ class PullCommand extends BaseCommand
 
         // Get specific file/directory to pull (if provided)
         $specificPath = $this->getArg($options, 0);
+        $remoteOverride = $this->getParam($options, 'from');
+        $localOverride = $this->getParam($options, 'to');
 
         // Show status bar
         $this->showStatusBar();
@@ -38,6 +40,21 @@ class PullCommand extends BaseCommand
             $this->output->error("Connection failed");
             $this->output->writeln();
             $this->output->error($e->getMessage());
+            return;
+        }
+
+        // Direct pull for a single file with remote/local override
+        if ($remoteOverride || $localOverride) {
+            $remotePath = $remoteOverride ?: $specificPath;
+            $localPath = $localOverride ?: $specificPath;
+
+            if (!$remotePath || !$localPath) {
+                $this->output->error("Direct pull requires both remote and local paths.");
+                $this->output->writeln("Usage: " . $this->cmd("pull <remote/path> --to=local/path"));
+                return;
+            }
+
+            $this->pullSingleFile($remotePath, $localPath, $dryRun, $force);
             return;
         }
 
@@ -147,6 +164,7 @@ class PullCommand extends BaseCommand
         // Download files
         $downloaded = 0;
         $failed = 0;
+        $failedDownloads = [];
         $total = count($diff['toDownload']);
 
         $this->output->writeln($this->output->colorize("Downloading files:", 'cyan'));
@@ -169,6 +187,10 @@ class PullCommand extends BaseCommand
                 $downloaded++;
             } catch (\Exception $e) {
                 $failed++;
+                $failedDownloads[] = [
+                    'file' => $file,
+                    'error' => $e->getMessage()
+                ];
             }
 
             // Show progress
@@ -198,6 +220,15 @@ class PullCommand extends BaseCommand
         }
         $this->output->writeln(str_repeat("═", 60), 'cyan');
         $this->output->writeln();
+
+        if (!empty($failedDownloads)) {
+            $this->output->writeln($this->output->colorize("Download failures:", 'red'));
+            $rows = [];
+            foreach ($failedDownloads as $failure) {
+                $rows[] = [$failure['file'], $failure['error']];
+            }
+            $this->output->table(['File', 'Error'], $rows);
+        }
     }
 
     /**
@@ -249,5 +280,58 @@ class PullCommand extends BaseCommand
         }
 
         return false;
+    }
+
+    /**
+     * Pull a single file from a specific remote path.
+     */
+    private function pullSingleFile($remotePath, $localPath, $dryRun, $force)
+    {
+        try {
+            $remotePath = $this->normalizeRelativePath($remotePath);
+            $localPath = $this->normalizeRelativePath($localPath);
+        } catch (\Exception $e) {
+            $this->output->error($e->getMessage());
+            return;
+        }
+
+        $fullLocalPath = WORKING_DIR . '/' . $localPath;
+
+        $this->output->writeln($this->output->colorize("Direct pull:", 'cyan'));
+        $this->output->writeln("  Remote: {$remotePath}");
+        $this->output->writeln("  Local:  {$localPath}");
+        $this->output->writeln();
+
+        if ($dryRun) {
+            $this->output->info("Dry run: no changes were made.");
+            return;
+        }
+
+        if (!$force) {
+            if (!$this->output->confirm("Download '{$remotePath}' to '{$localPath}'?", true)) {
+                $this->output->writeln("Pull cancelled.\n");
+                return;
+            }
+        }
+
+        try {
+            $this->api->downloadFile($remotePath, $fullLocalPath);
+            $this->output->success("Downloaded '{$remotePath}' → '{$localPath}'");
+        } catch (\Exception $e) {
+            $this->output->error("Download failed");
+            $this->output->writeln($e->getMessage());
+            return;
+        }
+
+        if ($remotePath === $localPath) {
+            $hash = Security::hashFile($fullLocalPath);
+            $this->state->setFileHash($localPath, $hash);
+            $this->state->setServerFileHash($localPath, $hash);
+            $this->state->save();
+        } else {
+            $this->output->warning("Note: remote path differs from local path; state tracking was not updated.");
+        }
+
+        $this->output->writeln();
     }
 }

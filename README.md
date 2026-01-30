@@ -163,7 +163,7 @@ shipphp
 
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-║            🚀 ShipPHP Faster v2.0.0                        ║
+║            🚀 ShipPHP Faster v2.1.0                        ║
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
 
@@ -195,7 +195,7 @@ ShipPHP automatically checks for new releases and notifies you when updates are 
 
 ```bash
 shipphp --version
-✓ ShipPHP Faster v2.0.0
+✓ ShipPHP Faster v2.1.0
 ```
 
 #### Git-like Status Command
@@ -322,6 +322,8 @@ shipphp bootstrap [path]        # Create short command alias
 shipphp env [name]              # Switch environments (staging/production)
 ```
 
+> **Config directory:** New installs place ShipPHP config and state inside `shipphp-config/` (including `shipphp.json`, `.ignore`, `.shipphp/`, and `shipphp-server.php`) to keep project roots clean. Legacy installs that already use root-level `shipphp.json` remain supported.
+
 ### Deployment
 ```bash
 shipphp                         # Smart dashboard (quick start guide)
@@ -330,11 +332,23 @@ shipphp status --detailed       # Detailed status with diagnostics
 shipphp push [path]             # Upload changed files to server
 shipphp pull [path]             # Download changed files from server
 shipphp sync                    # Status + Push (with confirmation)
+shipphp push local.php --to=public/index.php   # Upload a file to a specific server path
+shipphp pull public/index.php --to=local.php   # Download a server file to a specific local path
 ```
+
+### Utilities
+```bash
+shipphp tree [path]             # Display a tree of server files
+shipphp delete <path>           # Delete a file or directory on the server
+shipphp extract <file.zip>      # Extract a zip archive on the server
+shipphp extract <file.zip> --to=public/uploads  # Extract to a target directory
+shipphp where                   # Show server base directory
+```
+> Note: `extract` currently supports `.zip` archives (via PHP's ZipArchive).
 
 ### Backup Management (Version-Tracked)
 ```bash
-shipphp backup create                    # Create versioned local backup (v2.0.0, v2.0.1, etc.)
+shipphp backup create                    # Create versioned local backup (v2.1.0, v2.0.1, etc.)
 shipphp backup create --server           # Create and upload to server
 shipphp backup restore <id>              # Restore from local backup
 shipphp backup restore <id> --server     # Download and restore from server
@@ -478,13 +492,13 @@ shipphp push
 Every backup gets an automatic semantic version:
 
 ```bash
-shipphp backup create    # Creates: 2026-01-27-143022-v2.0.0
+shipphp backup create    # Creates: 2026-01-27-143022-v2.1.0
 shipphp backup create    # Creates: 2026-01-27-143155-v2.0.1
 shipphp backup create    # Creates: 2026-01-27-143301-v2.0.2
 ```
 
 ### Backup Features
-- **Automatic versioning** (v2.0.0, v2.0.1, v2.0.2...)
+- **Automatic versioning** (v2.1.0, v2.0.1, v2.0.2...)
 - **Version history tracking** (`.versions.json`)
 - **Local & server sync** (upload/download backups)
 - **Respects .gitignore** (only backs up relevant files)
@@ -508,7 +522,7 @@ shipphp backup stats                    # Compare local vs server backups
 ### shipphp.json (Local Project Config)
 ```json
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "projectName": "My Blog",
   "profileId": "myblog-com-a3f9",
   "serverUrl": "https://myblog.com/shipphp-server.php",

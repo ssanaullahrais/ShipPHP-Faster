@@ -187,6 +187,44 @@ class ApiClient
     }
 
     /**
+     * Extract archive on server
+     */
+    public function extractArchive($remotePath, $destination = null, $overwrite = false)
+    {
+        $payload = ['path' => $remotePath];
+
+        if ($destination) {
+            $payload['destination'] = $destination;
+        }
+
+        if ($overwrite) {
+            $payload['overwrite'] = 1;
+        }
+
+        $response = $this->request('extract', $payload);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Extract failed');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Get server base directory
+     */
+    public function where()
+    {
+        $response = $this->request('where', []);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Where request failed');
+        }
+
+        return $response;
+    }
+
+    /**
      * Create backup on server
      */
     public function createBackup($backupId)
@@ -323,9 +361,9 @@ class ApiClient
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_HTTPHEADER => [
-                'User-Agent: ShipPHP-Faster/2.0',
+                'User-Agent: ShipPHP-Faster/2.1.0',
                 'Accept: application/json',
-                'X-ShipPHP-Client-Version: 2.0.0'
+                'X-ShipPHP-Client-Version: 2.1.0'
             ]
         ];
 
