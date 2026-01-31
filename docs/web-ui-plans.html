@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipPHP Web UI - Plans</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .toast-enter {
+        animation: toastIn 0.25s ease-out;
+      }
+      @keyframes toastIn {
+        from {
+          transform: translateY(10px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <header class="border-b border-slate-800/80">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-200">S</div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-slate-400">ShipPHP</p>
+              <h1 class="text-lg font-semibold text-white">Plans & Apply</h1>
+            </div>
+          </div>
+          <button class="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-white" onclick="runAction('Apply plan')">Apply Plan</button>
+        </div>
+      </header>
+
+      <main class="mx-auto max-w-6xl px-6 py-8">
+        <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-2xl font-semibold">Queued Operations</h2>
+              <p class="text-sm text-slate-400">Review every action before applying to production.</p>
+            </div>
+            <button class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200" onclick="showToast('Plan cleared', 'All queued operations removed.', 'info')">Clear Plan</button>
+          </div>
+
+          <div class="mt-6 space-y-4 text-sm">
+            <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <div class="flex items-center justify-between">
+                <span class="font-medium">Move uploads/2024 → archive/2024</span>
+                <span class="rounded-full bg-indigo-500/20 px-2 py-1 text-xs text-indigo-200">Move</span>
+              </div>
+              <p class="mt-2 text-xs text-slate-400">37 files · queued 2 mins ago</p>
+            </div>
+            <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <div class="flex items-center justify-between">
+                <span class="font-medium">Trash storage/logs/*.log</span>
+                <span class="rounded-full bg-amber-500/20 px-2 py-1 text-xs text-amber-200">Trash</span>
+              </div>
+              <p class="mt-2 text-xs text-slate-400">14 files · queued 5 mins ago</p>
+            </div>
+            <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <div class="flex items-center justify-between">
+                <span class="font-medium">Rename config-old.php → config.php</span>
+                <span class="rounded-full bg-purple-500/20 px-2 py-1 text-xs text-purple-200">Rename</span>
+              </div>
+              <p class="mt-2 text-xs text-slate-400">1 file · queued 8 mins ago</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2"></div>
+
+    <script>
+      function showToast(title, message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const styles = {
+          info: 'border-slate-700 bg-slate-900/90 text-slate-200',
+          success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100',
+          error: 'border-rose-500/40 bg-rose-500/10 text-rose-100',
+        };
+        toast.className = `toast-enter w-80 rounded-xl border px-4 py-3 shadow-soft ${styles[type]}`;
+        toast.innerHTML = `
+          <p class="text-sm font-semibold">${title}</p>
+          <p class="text-xs text-slate-300">${message}</p>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+      }
+
+      function runAction(label) {
+        showToast(`${label} running`, 'Executing queued operations...', 'info');
+        setTimeout(() => showToast(`${label} complete`, 'All operations applied.', 'success'), 2000);
+      }
+    </script>
+  </body>
+</html>

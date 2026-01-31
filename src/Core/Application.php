@@ -21,6 +21,13 @@ use ShipPHP\Commands\TreeCommand;
 use ShipPHP\Commands\DeleteCommand;
 use ShipPHP\Commands\ExtractCommand;
 use ShipPHP\Commands\WhereCommand;
+use ShipPHP\Commands\MoveCommand;
+use ShipPHP\Commands\RenameCommand;
+use ShipPHP\Commands\TrashCommand;
+use ShipPHP\Commands\LockCommand;
+use ShipPHP\Commands\PlanCommand;
+use ShipPHP\Commands\ApplyCommand;
+use ShipPHP\Commands\WebCommand;
 use ShipPHP\Helpers\Output;
 use ShipPHP\Core\VersionChecker;
 use ShipPHP\Core\ProjectPaths;
@@ -63,6 +70,13 @@ class Application
             'install' => InstallCommand::class,
             'tree' => TreeCommand::class,
             'delete' => DeleteCommand::class,
+            'move' => MoveCommand::class,
+            'rename' => RenameCommand::class,
+            'trash' => TrashCommand::class,
+            'lock' => LockCommand::class,
+            'plan' => PlanCommand::class,
+            'apply' => ApplyCommand::class,
+            'web' => WebCommand::class,
             'extract' => ExtractCommand::class,
             'where' => WhereCommand::class,
         ];
@@ -111,9 +125,31 @@ class Application
                 $this->handleCommandError($e, $command);
             }
         } else {
+            if (!empty($command) && isset($options['flags']['delete'])) {
+                $this->runDeleteShortcut($command, $options);
+                return;
+            }
             $this->output->error("Unknown command: {$command}");
             $this->output->writeln("\nRun 'shipphp help' to see available commands.\n");
             exit(1);
+        }
+    }
+
+    /**
+     * Shortcut: shipphp <path> --delete
+     */
+    private function runDeleteShortcut($path, $options)
+    {
+        $this->output->writeln("");
+        $this->output->info("Using delete shortcut for: {$path}");
+
+        $options['args'] = array_merge([$path], $options['args'] ?? []);
+
+        try {
+            $commandInstance = new DeleteCommand($this->output);
+            $commandInstance->execute($options);
+        } catch (\Exception $e) {
+            $this->handleCommandError($e, 'delete');
         }
     }
 
@@ -360,7 +396,14 @@ class Application
         $this->output->writeln("    health            Check server health and diagnostics");
         $this->output->writeln("    diff [file]       Show differences for specific file");
         $this->output->writeln("    tree [path]       Show server file tree");
-        $this->output->writeln("    delete <path>     Delete a file or directory on the server");
+        $this->output->writeln("    delete <path>     Delete or trash a file or directory on the server");
+        $this->output->writeln("    trash [action]    List or restore trashed files");
+        $this->output->writeln("    move <path>       Move or copy files on the server");
+        $this->output->writeln("    rename <path>     Batch rename files on the server");
+        $this->output->writeln("    plan [action]     View or clear queued operations");
+        $this->output->writeln("    apply             Apply queued operations");
+        $this->output->writeln("    lock [on|off]     Toggle maintenance mode");
+        $this->output->writeln("    web              Launch local web UI");
         $this->output->writeln("    extract <zip>     Extract a zip archive on the server");
         $this->output->writeln("    where             Show server base directory");
         $this->output->writeln("");
@@ -369,6 +412,11 @@ class Application
         $this->output->writeln("    --version, -v     Show version information");
         $this->output->writeln("    --dry-run         Preview changes without executing");
         $this->output->writeln("    --force           Skip confirmations (use with caution)");
+        $this->output->writeln("    --plan            Queue operation instead of executing");
+        $this->output->writeln("    --pattern         Filter by glob pattern");
+        $this->output->writeln("    --exclude         Exclude files by glob pattern");
+        $this->output->writeln("    --permanent       Permanently delete instead of trash");
+        $this->output->writeln("    --message         Message for maintenance lock");
         $this->output->writeln("    --detailed, -d    Show detailed output (for health, status, etc.)");
         $this->output->writeln("    --yes, -y         Auto-confirm all prompts");
         $this->output->writeln("");
@@ -396,7 +444,18 @@ class Application
         $this->output->writeln("    {$cmd} backup stats           # Show backup comparison table");
         $this->output->writeln("    {$cmd} tree                   # Show server file tree");
         $this->output->writeln("    {$cmd} tree public            # Show tree for a specific path");
-        $this->output->writeln("    {$cmd} delete public/cache    # Delete a server directory");
+        $this->output->writeln("    {$cmd} delete public/cache    # Trash a server directory");
+        $this->output->writeln("    {$cmd} delete logs --pattern=*.log --exclude=keep.log  # Pattern delete");
+        $this->output->writeln("    {$cmd} trash                  # List trashed items");
+        $this->output->writeln("    {$cmd} trash restore <id>     # Restore trashed item");
+        $this->output->writeln("    {$cmd} uploads/file.zip --delete          # Delete via shortcut");
+        $this->output->writeln("    {$cmd} move uploads --select-all --to=archive   # Move a directory");
+        $this->output->writeln("    {$cmd} move uploads --select-all --to=archive --copy  # Copy a directory");
+        $this->output->writeln("    {$cmd} rename uploads --find=-old --replace=-new # Batch rename");
+        $this->output->writeln("    {$cmd} plan                   # View queued operations");
+        $this->output->writeln("    {$cmd} apply                  # Apply queued operations");
+        $this->output->writeln("    {$cmd} lock on --message=\"Maintenance\" # Enable maintenance mode");
+        $this->output->writeln("    {$cmd} web                    # Launch web UI");
         $this->output->writeln("    {$cmd} extract upload.zip     # Extract a zip archive on the server");
         $this->output->writeln("    {$cmd} where                  # Show server base directory");
         $this->output->writeln("");

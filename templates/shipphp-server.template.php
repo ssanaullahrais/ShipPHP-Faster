@@ -68,12 +68,16 @@ class ShipPHPServer
     private $baseDir;
     private $backupDir;
     private $logFile;
+    private $trashDir;
+    private $trashIndex;
 
     public function __construct()
     {
         $this->baseDir = realpath(BASE_DIR);
         $this->backupDir = $this->baseDir . '/backup';
         $this->logFile = $this->baseDir . '/.shipphp-server.log';
+        $this->trashDir = $this->baseDir . '/.shipphp-trash';
+        $this->trashIndex = $this->trashDir . '/index.json';
 
         if (!$this->baseDir) {
             $this->error('Base directory does not exist', 500);
@@ -128,12 +132,32 @@ class ShipPHPServer
                     $this->actionDelete();
                     break;
 
+                case 'trash':
+                    $this->actionTrash();
+                    break;
+
+                case 'listTrash':
+                    $this->actionListTrash();
+                    break;
+
+                case 'restoreTrash':
+                    $this->actionRestoreTrash();
+                    break;
+
+                case 'move':
+                    $this->actionMove();
+                    break;
+
                 case 'extract':
                     $this->actionExtract();
                     break;
 
                 case 'where':
                     $this->actionWhere();
+                    break;
+
+                case 'lock':
+                    $this->actionLock();
                     break;
 
                 case 'backup':
@@ -585,6 +609,260 @@ class ShipPHPServer
         $this->log("Deleted: {$path}");
 
         $this->success('File deleted successfully', ['path' => $path]);
+    }
+
+    /**
+     * Move files to trash
+     */
+    private function actionTrash()
+    {
+        $itemsJson = $_POST['items'] ?? '[]';
+        $items = json_decode($itemsJson, true);
+
+        if (!is_array($items)) {
+            $this->error('Invalid items payload', 400);
+        }
+
+        if (!is_dir($this->trashDir)) {
+            mkdir($this->trashDir, 0755, true);
+        }
+
+        $index = $this->loadTrashIndex();
+        $results = [
+            'trashed' => 0,
+            'failed' => 0,
+            'items' => [],
+            'errors' => []
+        ];
+
+        foreach ($items as $path) {
+            $path = trim((string)$path);
+            if ($path === '') {
+                continue;
+            }
+
+            try {
+                $this->validatePath($path);
+                $source = $this->baseDir . '/' . $path;
+                if (!file_exists($source)) {
+                    $results['failed']++;
+                    $results['errors'][] = "Source not found: {$path}";
+                    continue;
+                }
+
+                $trashId = 'trash-' . date('YmdHis') . '-' . bin2hex(random_bytes(4));
+                $trashPath = $this->trashDir . '/' . $trashId . '/' . $path;
+                $trashDir = dirname($trashPath);
+                if (!is_dir($trashDir)) {
+                    if (!mkdir($trashDir, 0755, true)) {
+                        throw new Exception('Failed to create trash directory');
+                    }
+                }
+
+                $this->movePath($source, $trashPath);
+
+                $entry = [
+                    'id' => $trashId,
+                    'path' => $path,
+                    'trash_path' => '.shipphp-trash/' . $trashId . '/' . $path,
+                    'trashed_at' => date('c')
+                ];
+                $index[] = $entry;
+                $results['items'][] = $entry;
+                $results['trashed']++;
+            } catch (Exception $e) {
+                $results['failed']++;
+                $results['errors'][] = $e->getMessage();
+            }
+        }
+
+        $this->saveTrashIndex($index);
+        $this->success('Trash complete', $results);
+    }
+
+    /**
+     * List trash items
+     */
+    private function actionListTrash()
+    {
+        $index = $this->loadTrashIndex();
+        $this->success('Trash list', ['items' => $index]);
+    }
+
+    /**
+     * Restore trash item
+     */
+    private function actionRestoreTrash()
+    {
+        $id = $_POST['id'] ?? '';
+        $force = !empty($_POST['force']);
+
+        if ($id === '') {
+            $this->error('Missing trash id', 400);
+        }
+
+        $index = $this->loadTrashIndex();
+        $entryIndex = null;
+        $entry = null;
+
+        foreach ($index as $idx => $item) {
+            if (($item['id'] ?? '') === $id) {
+                $entryIndex = $idx;
+                $entry = $item;
+                break;
+            }
+        }
+
+        if (!$entry) {
+            $this->error('Trash item not found', 404);
+        }
+
+        $trashPath = $this->baseDir . '/' . ($entry['trash_path'] ?? '');
+        $restorePath = $this->baseDir . '/' . ($entry['path'] ?? '');
+
+        if (!file_exists($trashPath)) {
+            $this->error('Trash source missing', 404);
+        }
+
+        if (file_exists($restorePath) && !$force) {
+            $this->error('Restore destination exists. Use --force to overwrite.', 409);
+        }
+
+        $restoreDir = dirname($restorePath);
+        if (!is_dir($restoreDir)) {
+            mkdir($restoreDir, 0755, true);
+        }
+
+        if (file_exists($restorePath) && $force) {
+            if (is_dir($restorePath)) {
+                $this->deleteDirectory($restorePath);
+            } else {
+                unlink($restorePath);
+            }
+        }
+
+        $this->movePath($trashPath, $restorePath);
+
+        if ($entryIndex !== null) {
+            array_splice($index, $entryIndex, 1);
+            $this->saveTrashIndex($index);
+        }
+
+        $this->success('Trash restored', ['path' => $entry['path'] ?? '']);
+    }
+
+    /**
+     * Move or copy files
+     */
+    private function actionMove()
+    {
+        $itemsJson = $_POST['items'] ?? '[]';
+        $mode = strtolower($_POST['mode'] ?? 'move');
+        $items = json_decode($itemsJson, true);
+
+        if (!is_array($items)) {
+            $this->error('Invalid items payload', 400);
+        }
+
+        if (!in_array($mode, ['move', 'copy'], true)) {
+            $this->error('Invalid mode', 400);
+        }
+
+        $results = [
+            'mode' => $mode,
+            'moved' => 0,
+            'copied' => 0,
+            'failed' => 0,
+            'errors' => []
+        ];
+
+        foreach ($items as $item) {
+            $from = $item['from'] ?? '';
+            $to = $item['to'] ?? '';
+
+            if ($from === '' || $to === '') {
+                $results['failed']++;
+                $results['errors'][] = 'Missing source or destination path';
+                continue;
+            }
+
+            if ($from === $to) {
+                continue;
+            }
+
+            try {
+                $this->validatePath($from);
+                $this->validatePath($to);
+
+                $source = $this->baseDir . '/' . $from;
+                $destination = $this->baseDir . '/' . $to;
+
+                if (!file_exists($source)) {
+                    $results['failed']++;
+                    $results['errors'][] = "Source not found: {$from}";
+                    continue;
+                }
+
+                $destinationDir = dirname($destination);
+                if (!is_dir($destinationDir)) {
+                    if (!mkdir($destinationDir, 0755, true)) {
+                        throw new Exception("Failed to create destination directory: {$destinationDir}");
+                    }
+                }
+
+                if ($mode === 'copy') {
+                    $this->copyPath($source, $destination);
+                    $results['copied']++;
+                } else {
+                    if (ENABLE_BACKUPS) {
+                        $this->backupFile($from);
+                    }
+                    $this->movePath($source, $destination);
+                    $results['moved']++;
+                }
+            } catch (Exception $e) {
+                $results['failed']++;
+                $results['errors'][] = $e->getMessage();
+            }
+        }
+
+        $this->success('Transfer complete', $results);
+    }
+
+    /**
+     * Toggle maintenance lock
+     */
+    private function actionLock()
+    {
+        $mode = strtolower($_POST['mode'] ?? 'status');
+        $message = $_POST['message'] ?? '';
+        $lockFile = $this->baseDir . '/.shipphp-maintenance';
+
+        if ($mode === 'status') {
+            $status = file_exists($lockFile);
+            $payload = ['locked' => $status];
+            if ($status) {
+                $payload['message'] = trim((string)file_get_contents($lockFile));
+            }
+            $this->success('Lock status', $payload);
+            return;
+        }
+
+        if ($mode === 'enable') {
+            file_put_contents($lockFile, $message ?: 'Maintenance enabled at ' . date('c'));
+            $this->success('Maintenance enabled', ['locked' => true]);
+            return;
+        }
+
+        if ($mode === 'disable') {
+            if (file_exists($lockFile)) {
+                unlink($lockFile);
+            }
+            $this->success('Maintenance disabled', ['locked' => false]);
+            return;
+        }
+
+        $this->error('Invalid lock mode', 400);
     }
 
     /**
@@ -1103,6 +1381,97 @@ class ShipPHPServer
 
         // Remove the directory itself
         return @rmdir($dir);
+    }
+
+    /**
+     * Load trash index
+     */
+    private function loadTrashIndex()
+    {
+        if (!file_exists($this->trashIndex)) {
+            return [];
+        }
+
+        $json = file_get_contents($this->trashIndex);
+        $data = json_decode($json, true);
+        return is_array($data) ? $data : [];
+    }
+
+    /**
+     * Save trash index
+     */
+    private function saveTrashIndex(array $index)
+    {
+        if (!is_dir($this->trashDir)) {
+            mkdir($this->trashDir, 0755, true);
+        }
+
+        file_put_contents($this->trashIndex, json_encode($index, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    /**
+     * Copy file or directory recursively
+     */
+    private function copyPath($source, $destination)
+    {
+        if (is_dir($source)) {
+            $this->copyDirectory($source, $destination);
+            return;
+        }
+
+        if (!copy($source, $destination)) {
+            throw new Exception('Failed to copy file');
+        }
+    }
+
+    private function copyDirectory($source, $destination)
+    {
+        if (!is_dir($destination)) {
+            if (!mkdir($destination, 0755, true)) {
+                throw new Exception('Failed to create destination directory');
+            }
+        }
+
+        $items = array_diff(scandir($source), ['.', '..']);
+
+        foreach ($items as $item) {
+            $sourcePath = $source . '/' . $item;
+            $destinationPath = $destination . '/' . $item;
+
+            if (is_dir($sourcePath)) {
+                $this->copyDirectory($sourcePath, $destinationPath);
+            } else {
+                if (!copy($sourcePath, $destinationPath)) {
+                    throw new Exception('Failed to copy file');
+                }
+            }
+        }
+    }
+
+    /**
+     * Move file or directory with fallback
+     */
+    private function movePath($source, $destination)
+    {
+        if (@rename($source, $destination)) {
+            return;
+        }
+
+        if (is_dir($source)) {
+            $this->copyDirectory($source, $destination);
+            if (!$this->deleteDirectory($source)) {
+                throw new Exception('Failed to remove source directory after copy');
+            }
+            return;
+        }
+
+        if (!copy($source, $destination)) {
+            throw new Exception('Failed to move file');
+        }
+
+        if (!unlink($source)) {
+            throw new Exception('Failed to remove source file after copy');
+        }
     }
 
     /**

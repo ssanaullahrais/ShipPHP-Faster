@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipPHP Web UI - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              border: "hsl(214.3 31.8% 91.4%)",
+              background: "hsl(0 0% 100%)",
+              foreground: "hsl(222.2 47.4% 11.2%)",
+              muted: "hsl(210 40% 96.1%)",
+              mutedForeground: "hsl(215.4 16.3% 46.9%)",
+              primary: "hsl(222.2 47.4% 11.2%)",
+              primaryForeground: "hsl(210 40% 98%)",
+              card: "hsl(0 0% 100%)",
+              cardForeground: "hsl(222.2 47.4% 11.2%)",
+            },
+            borderRadius: {
+              xl: "0.75rem",
+            },
+            boxShadow: {
+              soft: "0 10px 35px rgba(15, 23, 42, 0.12)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .toast-enter {
+        animation: toastIn 0.25s ease-out;
+      }
+      @keyframes toastIn {
+        from {
+          transform: translateY(10px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      .progress-bar {
+        background: linear-gradient(90deg, #22c55e, #4ade80);
+      }
+    </style>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <header class="border-b border-slate-800/80">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-200">
+              <i data-lucide="ship" class="h-5 w-5"></i>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-slate-400">ShipPHP</p>
+              <h1 class="text-lg font-semibold text-white">Operations Dashboard</h1>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="profile-badge" class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+              Connected · Production
+            </div>
+            <button class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200" onclick="toggleMaintenance()">
+              <span class="inline-flex items-center gap-2"><i data-lucide="shield-alert" class="h-4 w-4"></i>Maintenance</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="mx-auto grid max-w-6xl grid-cols-12 gap-6 px-6 py-8">
+        <aside class="col-span-12 space-y-4 lg:col-span-3">
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Navigation</p>
+            <nav class="mt-4 space-y-2 text-sm">
+              <a class="flex items-center justify-between rounded-lg bg-slate-900 px-3 py-2 text-white" href="web-ui-dashboard.html">
+                Dashboard
+                <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+              </a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-deploy.html">Deployments</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-files.html">File Explorer</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-plans.html">Plans &amp; Apply</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-trash.html">Trash &amp; Restore</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-backups.html">Backups</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-settings.html">Settings</a>
+            </nav>
+          </div>
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Quick Actions</p>
+            <div class="mt-4 space-y-2">
+              <button class="w-full rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white" onclick="showToast('Plan created', 'New plan has been started.', 'success')">New Plan</button>
+              <button class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200" onclick="runAction('pull')">Pull Changes</button>
+              <button class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200" onclick="runAction('push')">Push Changes</button>
+            </div>
+          </div>
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Command Palette</p>
+            <div class="mt-4 space-y-2">
+              <button class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-left text-sm text-slate-200" onclick="showToast('Command copied', 'shipphp status', 'info')">
+                <span class="flex items-center justify-between">
+                  shipphp status
+                  <i data-lucide="copy" class="h-4 w-4"></i>
+                </span>
+              </button>
+              <button class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-left text-sm text-slate-200" onclick="showToast('Command copied', 'shipphp push --dry-run', 'info')">
+                <span class="flex items-center justify-between">
+                  shipphp push --dry-run
+                  <i data-lucide="copy" class="h-4 w-4"></i>
+                </span>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <section class="col-span-12 space-y-6 lg:col-span-9">
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6 shadow-soft">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 class="text-2xl font-semibold text-white">Today’s Overview</h2>
+                <p class="text-sm text-slate-400">Live status from your server and pending actions.</p>
+              </div>
+              <button class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white" onclick="applyPlan()">Apply All Plans</button>
+            </div>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center justify-between">
+                  <p class="text-xs uppercase text-slate-400">Pending Plan</p>
+                  <i data-lucide="clipboard-check" class="h-4 w-4 text-indigo-200"></i>
+                </div>
+                <p class="mt-2 text-2xl font-semibold">8</p>
+                <p class="text-xs text-slate-500">Move 5 · Delete 2 · Rename 1</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center justify-between">
+                  <p class="text-xs uppercase text-slate-400">Server Health</p>
+                  <i data-lucide="activity" class="h-4 w-4 text-emerald-200"></i>
+                </div>
+                <p class="mt-2 text-2xl font-semibold text-emerald-300">Healthy</p>
+                <p class="text-xs text-slate-500">Disk 63% · 99.9% uptime</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center justify-between">
+                  <p class="text-xs uppercase text-slate-400">Last Deploy</p>
+                  <i data-lucide="clock" class="h-4 w-4 text-slate-300"></i>
+                </div>
+                <p class="mt-2 text-2xl font-semibold">14m ago</p>
+                <p class="text-xs text-slate-500">User: admin@shipphp</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-3">
+            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft lg:col-span-2">
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold">Live Activity</h3>
+                <button class="text-xs text-slate-400" onclick="showToast('Refreshing', 'Fetching latest server activity', 'info')">Refresh</button>
+              </div>
+              <div class="mt-4 space-y-3 text-sm">
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <p class="font-medium">Pull completed</p>
+                  <p class="text-xs text-slate-400">12 files updated · 2 mins ago</p>
+                </div>
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <p class="font-medium">Plan created</p>
+                  <p class="text-xs text-slate-400">Move uploads/2024 · 9 mins ago</p>
+                </div>
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <p class="font-medium">Trash restored</p>
+                  <p class="text-xs text-slate-400">storage/logs/error.log · 45 mins ago</p>
+                </div>
+              </div>
+              <div class="mt-6 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center justify-between text-sm">
+                  <span>Active transfer</span>
+                  <span id="progress-label">0%</span>
+                </div>
+                <div class="mt-3 h-2 w-full rounded-full bg-slate-800">
+                  <div id="progress-bar" class="progress-bar h-2 w-0 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+              <h3 class="text-lg font-semibold">Next Steps</h3>
+              <ul class="mt-4 space-y-3 text-sm text-slate-300">
+                <li class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">Review plan before apply</li>
+                <li class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">Clean trash older than 7 days</li>
+                <li class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">Create pre-release backup</li>
+              </ul>
+              <button class="mt-4 w-full rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white" onclick="showToast('Backup queued', 'Backup will start shortly', 'success')">Queue Backup</button>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6 shadow-soft">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-semibold">Command Center</h3>
+                <p class="text-sm text-slate-400">All ShipPHP commands with usage and examples.</p>
+              </div>
+              <button class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-200" onclick="showToast('Copied', 'All commands copied', 'success')">Copy All</button>
+            </div>
+            <div class="mt-4 grid gap-4 md:grid-cols-2">
+              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center gap-2 text-sm font-medium">
+                  <i data-lucide="rocket" class="h-4 w-4 text-indigo-200"></i>
+                  init
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Initialize a project and generate config files.</p>
+                <p class="mt-2 text-xs text-slate-500">Usage: shipphp init</p>
+                <p class="text-xs text-slate-500">Example: shipphp init</p>
+              </div>
+              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center gap-2 text-sm font-medium">
+                  <i data-lucide="log-in" class="h-4 w-4 text-indigo-200"></i>
+                  login
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Connect this directory to a saved profile.</p>
+                <p class="mt-2 text-xs text-slate-500">Usage: shipphp login</p>
+                <p class="text-xs text-slate-500">Example: shipphp login</p>
+              </div>
+              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center gap-2 text-sm font-medium">
+                  <i data-lucide="activity" class="h-4 w-4 text-emerald-200"></i>
+                  status
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Show changes since last sync.</p>
+                <p class="mt-2 text-xs text-slate-500">Usage: shipphp status</p>
+                <p class="text-xs text-slate-500">Example: shipphp status</p>
+              </div>
+              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center gap-2 text-sm font-medium">
+                  <i data-lucide="upload" class="h-4 w-4 text-emerald-200"></i>
+                  push
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Upload local changes to the server.</p>
+                <p class="mt-2 text-xs text-slate-500">Usage: shipphp push [path]</p>
+                <p class="text-xs text-slate-500">Example: shipphp push --dry-run</p>
+              </div>
+              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center gap-2 text-sm font-medium">
+                  <i data-lucide="download" class="h-4 w-4 text-emerald-200"></i>
+                  pull
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Download server changes locally.</p>
+                <p class="mt-2 text-xs text-slate-500">Usage: shipphp pull [path]</p>
+                <p class="text-xs text-slate-500">Example: shipphp pull public/index.php --to=local.php</p>
+              </div>
+              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center gap-2 text-sm font-medium">
+                  <i data-lucide="repeat" class="h-4 w-4 text-amber-200"></i>
+                  sync
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Status + push with confirmation.</p>
+                <p class="mt-2 text-xs text-slate-500">Usage: shipphp sync</p>
+                <p class="text-xs text-slate-500">Example: shipphp sync --yes</p>
+              </div>
+              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center gap-2 text-sm font-medium">
+                  <i data-lucide="folders" class="h-4 w-4 text-indigo-200"></i>
+                  move
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Move or copy files on the server.</p>
+                <p class="mt-2 text-xs text-slate-500">Usage: shipphp move &lt;path&gt; --to=dest</p>
+                <p class="text-xs text-slate-500">Example: shipphp move uploads --select-all --to=archive</p>
+              </div>
+              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center gap-2 text-sm font-medium">
+                  <i data-lucide="trash" class="h-4 w-4 text-rose-200"></i>
+                  delete
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Trash or permanently delete server files.</p>
+                <p class="mt-2 text-xs text-slate-500">Usage: shipphp delete &lt;path&gt; [--pattern=glob]</p>
+                <p class="text-xs text-slate-500">Example: shipphp delete logs --pattern=*.log</p>
+              </div>
+            </div>
+
+            <div class="mt-6 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <div class="flex items-center justify-between text-xs uppercase text-slate-400">
+                <span>All Commands</span>
+                <span>CLI Workflow Reference</span>
+              </div>
+              <div class="mt-4 grid gap-3 text-xs text-slate-300 md:grid-cols-2">
+                <div>
+                  <p class="font-semibold text-slate-200">install</p>
+                  <p>shipphp install --global</p>
+                  <p class="text-slate-500">Example: shipphp install --global</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">profile</p>
+                  <p>shipphp profile list|add|use</p>
+                  <p class="text-slate-500">Example: shipphp profile list</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">env</p>
+                  <p>shipphp env &lt;name&gt;</p>
+                  <p class="text-slate-500">Example: shipphp env staging</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">health</p>
+                  <p>shipphp health [--detailed]</p>
+                  <p class="text-slate-500">Example: shipphp health --detailed</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">tree</p>
+                  <p>shipphp tree [path]</p>
+                  <p class="text-slate-500">Example: shipphp tree public</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">diff</p>
+                  <p>shipphp diff [file]</p>
+                  <p class="text-slate-500">Example: shipphp diff index.php</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">extract</p>
+                  <p>shipphp extract &lt;zip&gt;</p>
+                  <p class="text-slate-500">Example: shipphp extract upload.zip</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">where</p>
+                  <p>shipphp where</p>
+                  <p class="text-slate-500">Example: shipphp where</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">backup</p>
+                  <p>shipphp backup create|restore|delete</p>
+                  <p class="text-slate-500">Example: shipphp backup create --server</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">trash</p>
+                  <p>shipphp trash [restore &lt;id&gt;]</p>
+                  <p class="text-slate-500">Example: shipphp trash restore &lt;id&gt;</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">rename</p>
+                  <p>shipphp rename &lt;path&gt; --find --replace</p>
+                  <p class="text-slate-500">Example: shipphp rename uploads --find=-old --replace=-new</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">plan</p>
+                  <p>shipphp plan [clear]</p>
+                  <p class="text-slate-500">Example: shipphp plan</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">apply</p>
+                  <p>shipphp apply</p>
+                  <p class="text-slate-500">Example: shipphp apply</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">lock</p>
+                  <p>shipphp lock on|off</p>
+                  <p class="text-slate-500">Example: shipphp lock on --message=\"Maintenance\"</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">token</p>
+                  <p>shipphp token show|rotate</p>
+                  <p class="text-slate-500">Example: shipphp token rotate</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">server</p>
+                  <p>shipphp server generate &lt;name&gt;</p>
+                  <p class="text-slate-500">Example: shipphp server generate prod</p>
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-200">web</p>
+                  <p>shipphp web [--host=] [--port=]</p>
+                  <p class="text-slate-500">Example: shipphp web</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2"></div>
+    </div>
+
+    <script>
+      lucide.createIcons();
+
+      const PROFILE_KEY = 'shipphp_profiles';
+      const SELECTED_KEY = 'shipphp_selected_profile';
+      const API_ENDPOINT = '/api/command';
+
+      function loadProfileBadge() {
+        const badge = document.getElementById('profile-badge');
+        const profiles = JSON.parse(localStorage.getItem(PROFILE_KEY) || '[]');
+        const selectedId = localStorage.getItem(SELECTED_KEY);
+        const selected = profiles.find((item) => item.id === selectedId) || profiles[profiles.length - 1];
+        if (!selected) {
+          badge.textContent = 'Not connected';
+          badge.className = 'rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-200';
+          return;
+        }
+        badge.textContent = `Connected · ${selected.env}`;
+      }
+
+      const progressBar = document.getElementById('progress-bar');
+      const progressLabel = document.getElementById('progress-label');
+      let progressValue = 0;
+      const progressInterval = setInterval(() => {
+        progressValue = (progressValue + 7) % 101;
+        progressBar.style.width = `${progressValue}%`;
+        progressLabel.textContent = `${progressValue}%`;
+      }, 1200);
+
+      function showToast(title, message, type) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const styles = {
+          info: 'border-slate-700 bg-slate-900/90 text-slate-200',
+          success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100',
+          error: 'border-rose-500/40 bg-rose-500/10 text-rose-100',
+        };
+        toast.className = `toast-enter w-80 rounded-xl border px-4 py-3 shadow-soft ${styles[type] || styles.info}`;
+        toast.innerHTML = `
+          <p class="text-sm font-semibold">${title}</p>
+          <p class="text-xs text-slate-300">${message}</p>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+      }
+
+      async function runAction(action) {
+        showToast('Running', `${action} started...`, 'info');
+        try {
+          const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command: action, flags: { 'dry-run': true } }),
+          });
+          const data = await response.json();
+          if (data.success) {
+            showToast('Completed', `${action} finished successfully`, 'success');
+          } else {
+            showToast('Error', data.error || `${action} failed`, 'error');
+          }
+        } catch (error) {
+          showToast('Error', `Failed to run ${action}`, 'error');
+        }
+      }
+
+      async function applyPlan() {
+        showToast('Applying plan', 'Executing queued operations.', 'info');
+        try {
+          const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command: 'apply' }),
+          });
+          const data = await response.json();
+          if (data.success) {
+            showToast('Plan applied', 'All operations completed.', 'success');
+          } else {
+            showToast('Error', data.error || 'Apply failed', 'error');
+          }
+        } catch (error) {
+          showToast('Error', 'Apply failed', 'error');
+        }
+      }
+
+      function toggleMaintenance() {
+        showToast('Maintenance', 'Maintenance mode toggled.', 'info');
+      }
+
+      loadProfileBadge();
+    </script>
+  </body>
+</html>

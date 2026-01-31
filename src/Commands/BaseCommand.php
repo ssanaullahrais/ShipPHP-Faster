@@ -8,6 +8,7 @@ use ShipPHP\Core\ApiClient;
 use ShipPHP\Core\Backup;
 use ShipPHP\Core\ProfileManager;
 use ShipPHP\Core\ProjectPaths;
+use ShipPHP\Core\PlanManager;
 use ShipPHP\Helpers\Output;
 
 /**
@@ -139,6 +140,57 @@ abstract class BaseCommand
         $this->output->writeln("║  " . str_pad($title, 57) . "║", 'cyan');
         $this->output->writeln("╚════════════════════════════════════════════════════════════╝", 'cyan');
         $this->output->writeln();
+    }
+
+    /**
+     * Initialize plan manager
+     */
+    protected function initPlan()
+    {
+        $this->initConfig();
+        return new PlanManager();
+    }
+
+    /**
+     * Check for dangerous paths
+     */
+    protected function isDangerousPath($path)
+    {
+        $normalized = trim(str_replace('\\', '/', $path));
+        $normalized = trim($normalized, '/');
+
+        if ($normalized === '' || $normalized === '.' || $normalized === '..') {
+            return true;
+        }
+
+        $dangerousRoots = ['public', 'config', 'vendor', 'storage', '.env'];
+        return in_array($normalized, $dangerousRoots, true);
+    }
+
+    /**
+     * Require --force for dangerous paths
+     */
+    protected function requireForceForDangerous(array $paths, $force, $actionLabel)
+    {
+        $dangerous = array_filter($paths, function ($path) {
+            return $this->isDangerousPath($path);
+        });
+
+        if (empty($dangerous)) {
+            return true;
+        }
+
+        $this->output->warning("Dangerous target(s) detected:");
+        foreach ($dangerous as $path) {
+            $this->output->writeln("  - {$path}");
+        }
+
+        if (!$force) {
+            $this->output->error("Refusing to {$actionLabel} dangerous paths without --force.");
+            return false;
+        }
+
+        return true;
     }
 
     /**
