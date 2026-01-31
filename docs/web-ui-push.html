@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipPHP Web UI - Push</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <header class="border-b border-slate-800/80">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-200">S</div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-slate-400">ShipPHP</p>
+              <h1 class="text-lg font-semibold text-white">Push Changes</h1>
+            </div>
+          </div>
+          <a class="text-xs text-slate-400" href="web-ui-deploy.html">Back to Deployments</a>
+        </div>
+      </header>
+
+      <main class="mx-auto grid max-w-6xl grid-cols-12 gap-6 px-6 py-8">
+        <section class="col-span-12 space-y-6">
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6">
+            <h2 class="text-2xl font-semibold">Push Preview</h2>
+            <p class="text-sm text-slate-400">Review local changes that will be deployed to production.</p>
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">To Upload</p>
+                <p class="mt-2 text-2xl font-semibold">18</p>
+                <p class="text-xs text-slate-500">Modified files</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">Conflicts</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-200">2</p>
+                <p class="text-xs text-slate-500">Resolve before push</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">New Files</p>
+                <p class="mt-2 text-2xl font-semibold">6</p>
+                <p class="text-xs text-slate-500">Will be added</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-3">
+            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 lg:col-span-2">
+              <h3 class="text-lg font-semibold">Files to Push</h3>
+              <div class="mt-4 space-y-3 text-sm">
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <div class="flex items-center justify-between">
+                    <span>app/Http/Controllers/DeployController.php</span>
+                    <span class="text-xs text-emerald-200">Modified</span>
+                  </div>
+                </div>
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <div class="flex items-center justify-between">
+                    <span>resources/views/dashboard.blade.php</span>
+                    <span class="text-xs text-indigo-200">New</span>
+                  </div>
+                </div>
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <div class="flex items-center justify-between">
+                    <span>config/app.php</span>
+                    <span class="text-xs text-amber-200">Conflict</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+              <h3 class="text-lg font-semibold">Push Options</h3>
+              <div class="mt-4 space-y-3 text-sm text-slate-300">
+                <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  Force upload
+                  <input type="checkbox" class="h-4 w-4" />
+                </label>
+                <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  Create backup
+                  <input type="checkbox" class="h-4 w-4" checked />
+                </label>
+                <button class="w-full rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-white">Start Push</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

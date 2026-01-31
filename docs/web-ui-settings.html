@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipPHP Web UI - Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <header class="border-b border-slate-800/80">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-200">S</div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-slate-400">ShipPHP</p>
+              <h1 class="text-lg font-semibold text-white">Settings</h1>
+            </div>
+          </div>
+          <button class="rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white">Save Changes</button>
+        </div>
+      </header>
+
+      <main class="mx-auto max-w-6xl px-6 py-8">
+        <div class="grid gap-6 lg:grid-cols-2">
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6">
+            <h2 class="text-lg font-semibold">Profile Settings</h2>
+            <div class="mt-4 space-y-4 text-sm">
+              <div>
+                <label class="text-xs uppercase text-slate-400">Profile Name</label>
+                <input class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2" value="production-main" />
+              </div>
+              <div>
+                <label class="text-xs uppercase text-slate-400">Server URL</label>
+                <input class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2" value="https://example.com/shipphp-server.php" />
+              </div>
+              <div>
+                <label class="text-xs uppercase text-slate-400">Token</label>
+                <input class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2" value="••••••••••••" />
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6">
+            <h2 class="text-lg font-semibold">Safety Defaults</h2>
+            <div class="mt-4 space-y-3 text-sm text-slate-300">
+              <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                Always use trash
+                <input type="checkbox" checked class="h-4 w-4" />
+              </label>
+              <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                Require plan before apply
+                <input type="checkbox" checked class="h-4 w-4" />
+              </label>
+              <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                Auto-refresh tree every 5s
+                <input type="checkbox" class="h-4 w-4" />
+              </label>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

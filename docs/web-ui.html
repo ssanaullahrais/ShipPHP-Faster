@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipPHP Web UI Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              border: "hsl(214.3 31.8% 91.4%)",
+              input: "hsl(214.3 31.8% 91.4%)",
+              ring: "hsl(215 20.2% 65.1%)",
+              background: "hsl(0 0% 100%)",
+              foreground: "hsl(222.2 47.4% 11.2%)",
+              muted: "hsl(210 40% 96.1%)",
+              mutedForeground: "hsl(215.4 16.3% 46.9%)",
+              primary: "hsl(222.2 47.4% 11.2%)",
+              primaryForeground: "hsl(210 40% 98%)",
+              secondary: "hsl(210 40% 96.1%)",
+              secondaryForeground: "hsl(222.2 47.4% 11.2%)",
+              destructive: "hsl(0 84.2% 60.2%)",
+              destructiveForeground: "hsl(210 40% 98%)",
+              accent: "hsl(210 40% 96.1%)",
+              accentForeground: "hsl(222.2 47.4% 11.2%)",
+              card: "hsl(0 0% 100%)",
+              cardForeground: "hsl(222.2 47.4% 11.2%)",
+            },
+            borderRadius: {
+              xl: "0.75rem",
+            },
+            boxShadow: {
+              soft: "0 8px 30px rgba(15, 23, 42, 0.08)",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <header class="border-b border-slate-800/80">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-200">
+              <span class="text-lg font-semibold">S</span>
+            </div>
+            <div>
+              <p class="text-sm uppercase tracking-[0.2em] text-slate-400">ShipPHP</p>
+              <h1 class="text-xl font-semibold text-white">Web UI Preview</h1>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-200">
+              Static Preview
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="mx-auto grid max-w-6xl grid-cols-12 gap-6 px-6 py-8">
+        <aside class="col-span-12 space-y-4 lg:col-span-3">
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Preview Pages</p>
+            <nav class="mt-4 space-y-2 text-sm">
+              <a class="flex items-center justify-between rounded-lg bg-slate-900 px-3 py-2 text-white" href="web-ui-init.html">
+                Init &amp; Profiles
+                <span class="rounded-full bg-indigo-500/20 px-2 py-0.5 text-xs text-indigo-200">Start</span>
+              </a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-dashboard.html">Dashboard</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-deploy.html">Deployments</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-files.html">File Explorer</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-plans.html">Plans &amp; Apply</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-trash.html">Trash &amp; Restore</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-backups.html">Backups</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-settings.html">Settings</a>
+            </nav>
+          </div>
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Key Journeys</p>
+            <div class="mt-4 space-y-2">
+              <a class="block w-full rounded-lg bg-indigo-500 px-3 py-2 text-center text-sm font-medium text-white" href="web-ui-init.html">Start Init</a>
+              <a class="block w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-center text-sm text-slate-200" href="web-ui-pull.html">Pull Flow</a>
+              <a class="block w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-center text-sm text-slate-200" href="web-ui-push.html">Push Flow</a>
+            </div>
+          </div>
+        </aside>
+
+        <section class="col-span-12 space-y-6 lg:col-span-9">
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6 shadow-soft">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 class="text-2xl font-semibold text-white">Web UI Flow Overview</h2>
+                <p class="text-sm text-slate-400">Explore onboarding, deployments, files, plans, and safety tooling.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <a class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200" href="web-ui-deploy.html">View Deployments</a>
+                <a class="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-white" href="web-ui-files.html">Open File Explorer</a>
+              </div>
+            </div>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">Onboarding</p>
+                <p class="mt-2 text-2xl font-semibold">Init</p>
+                <p class="text-xs text-slate-500">Profiles · Server setup</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">Deploy</p>
+                <p class="mt-2 text-2xl font-semibold">Pull/Push</p>
+                <p class="text-xs text-slate-500">Preview changes before apply</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">Safety</p>
+                <p class="mt-2 text-2xl font-semibold text-emerald-300">Plan</p>
+                <p class="text-xs text-slate-500">Trash · Apply · Backups</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+            <h3 class="text-lg font-semibold">Suggested Pages</h3>
+            <div class="mt-4 grid gap-3 text-sm md:grid-cols-2">
+              <a class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" href="web-ui-init.html">Init &amp; Profiles</a>
+              <a class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" href="web-ui-pull.html">Pull Preview</a>
+              <a class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" href="web-ui-push.html">Push Preview</a>
+              <a class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" href="web-ui-sync.html">Sync Flow</a>
+              <a class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" href="web-ui-plans.html">Plans &amp; Apply</a>
+              <a class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" href="web-ui-trash.html">Trash &amp; Restore</a>
+              <a class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" href="web-ui-backups.html">Backups</a>
+              <a class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" href="web-ui-settings.html">Settings</a>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
