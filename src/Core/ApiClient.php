@@ -187,6 +187,97 @@ class ApiClient
     }
 
     /**
+     * Trash files on server
+     */
+    public function trashFiles(array $paths)
+    {
+        $response = $this->request('trash', [
+            'items' => json_encode($paths),
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Trash failed');
+        }
+
+        return $response;
+    }
+
+    /**
+     * List trashed files
+     */
+    public function listTrash()
+    {
+        $response = $this->request('listTrash', []);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'List trash failed');
+        }
+
+        return $response['items'] ?? [];
+    }
+
+    /**
+     * Restore trashed file by id
+     */
+    public function restoreTrash($trashId, $force = false)
+    {
+        $response = $this->request('restoreTrash', [
+            'id' => $trashId,
+            'force' => $force ? 1 : 0,
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Restore failed');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Move or copy files on server
+     */
+    public function moveFiles(array $items, $mode = 'move')
+    {
+        $response = $this->request('move', [
+            'items' => json_encode($items),
+            'mode' => $mode,
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Move failed');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Rename files on server
+     */
+    public function renameFiles(array $items)
+    {
+        return $this->moveFiles($items, 'move');
+    }
+
+    /**
+     * Toggle maintenance lock
+     */
+    public function lock($mode, $message = null)
+    {
+        $payload = ['mode' => $mode];
+        if ($message !== null) {
+            $payload['message'] = $message;
+        }
+
+        $response = $this->request('lock', $payload);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Lock request failed');
+        }
+
+        return $response;
+    }
+
+    /**
      * Extract archive on server
      */
     public function extractArchive($remotePath, $destination = null, $overwrite = false)

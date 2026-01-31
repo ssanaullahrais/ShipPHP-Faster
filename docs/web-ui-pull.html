@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipPHP Web UI - Pull</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .toast-enter {
+        animation: toastIn 0.25s ease-out;
+      }
+      @keyframes toastIn {
+        from {
+          transform: translateY(10px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <header class="border-b border-slate-800/80">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-200">S</div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-slate-400">ShipPHP</p>
+              <h1 class="text-lg font-semibold text-white">Pull Changes</h1>
+            </div>
+          </div>
+          <a class="text-xs text-slate-400" href="web-ui-deploy.html">Back to Deployments</a>
+        </div>
+      </header>
+
+      <main class="mx-auto grid max-w-6xl grid-cols-12 gap-6 px-6 py-8">
+        <section class="col-span-12 space-y-6">
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6">
+            <h2 class="text-2xl font-semibold">Pull Preview</h2>
+            <p class="text-sm text-slate-400">Review the files that will be pulled from the server.</p>
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">To Download</p>
+                <p class="mt-2 text-2xl font-semibold">12</p>
+                <p class="text-xs text-slate-500">New server files</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">Conflicts</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-200">3</p>
+                <p class="text-xs text-slate-500">Require review</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">Local Changes</p>
+                <p class="mt-2 text-2xl font-semibold">5</p>
+                <p class="text-xs text-slate-500">Will be kept</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-3">
+            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 lg:col-span-2">
+              <h3 class="text-lg font-semibold">Files to Pull</h3>
+              <div class="mt-4 space-y-3 text-sm">
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <div class="flex items-center justify-between">
+                    <span>public/index.php</span>
+                    <span class="text-xs text-emerald-200">Updated</span>
+                  </div>
+                </div>
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <div class="flex items-center justify-between">
+                    <span>storage/cache/app.cache</span>
+                    <span class="text-xs text-emerald-200">New</span>
+                  </div>
+                </div>
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <div class="flex items-center justify-between">
+                    <span>config/services.php</span>
+                    <span class="text-xs text-amber-200">Conflict</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+              <h3 class="text-lg font-semibold">Pull Options</h3>
+              <div class="mt-4 space-y-3 text-sm text-slate-300">
+                <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  Overwrite conflicts
+                  <input type="checkbox" class="h-4 w-4" />
+                </label>
+                <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  Create backup
+                  <input type="checkbox" class="h-4 w-4" checked />
+                </label>
+                <button class="w-full rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white" onclick="runAction('Pull')">Start Pull</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2"></div>
+
+    <script>
+      function showToast(title, message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const styles = {
+          info: 'border-slate-700 bg-slate-900/90 text-slate-200',
+          success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100',
+          error: 'border-rose-500/40 bg-rose-500/10 text-rose-100',
+        };
+        toast.className = `toast-enter w-80 rounded-xl border px-4 py-3 shadow-soft ${styles[type]}`;
+        toast.innerHTML = `
+          <p class="text-sm font-semibold">${title}</p>
+          <p class="text-xs text-slate-300">${message}</p>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+      }
+
+      function runAction(label) {
+        showToast(`${label} running`, 'Preparing file transfer...', 'info');
+        setTimeout(() => showToast(`${label} complete`, 'All files pulled successfully.', 'success'), 2000);
+      }
+    </script>
+  </body>
+</html>
