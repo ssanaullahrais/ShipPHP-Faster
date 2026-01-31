@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ShipPHP Web UI - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              border: "hsl(214.3 31.8% 91.4%)",
+              background: "hsl(0 0% 100%)",
+              foreground: "hsl(222.2 47.4% 11.2%)",
+              muted: "hsl(210 40% 96.1%)",
+              mutedForeground: "hsl(215.4 16.3% 46.9%)",
+              primary: "hsl(222.2 47.4% 11.2%)",
+              primaryForeground: "hsl(210 40% 98%)",
+              card: "hsl(0 0% 100%)",
+              cardForeground: "hsl(222.2 47.4% 11.2%)",
+            },
+            borderRadius: {
+              xl: "0.75rem",
+            },
+            boxShadow: {
+              soft: "0 10px 35px rgba(15, 23, 42, 0.12)",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <header class="border-b border-slate-800/80">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-200">
+              <span class="text-lg font-semibold">S</span>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-slate-400">ShipPHP</p>
+              <h1 class="text-lg font-semibold text-white">Operations Dashboard</h1>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+              Connected · Production
+            </div>
+            <button class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200">Maintenance</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="mx-auto grid max-w-6xl grid-cols-12 gap-6 px-6 py-8">
+        <aside class="col-span-12 space-y-4 lg:col-span-3">
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Navigation</p>
+            <nav class="mt-4 space-y-2 text-sm">
+              <a class="flex items-center justify-between rounded-lg bg-slate-900 px-3 py-2 text-white" href="web-ui-dashboard.html">Dashboard</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-deploy.html">Deployments</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-files.html">File Explorer</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-plans.html">Plans &amp; Apply</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-trash.html">Trash &amp; Restore</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-backups.html">Backups</a>
+              <a class="block rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-900" href="web-ui-settings.html">Settings</a>
+            </nav>
+          </div>
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Quick Actions</p>
+            <div class="mt-4 space-y-2">
+              <button class="w-full rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white">New Plan</button>
+              <button class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200">Pull Changes</button>
+              <button class="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200">Push Changes</button>
+            </div>
+          </div>
+        </aside>
+
+        <section class="col-span-12 space-y-6 lg:col-span-9">
+          <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6 shadow-soft">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 class="text-2xl font-semibold text-white">Today’s Overview</h2>
+                <p class="text-sm text-slate-400">Live status from your server and pending actions.</p>
+              </div>
+              <button class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white">Apply All Plans</button>
+            </div>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">Pending Plan</p>
+                <p class="mt-2 text-2xl font-semibold">8</p>
+                <p class="text-xs text-slate-500">Move 5 · Delete 2 · Rename 1</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">Server Health</p>
+                <p class="mt-2 text-2xl font-semibold text-emerald-300">Healthy</p>
+                <p class="text-xs text-slate-500">Disk 63% · 99.9% uptime</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p class="text-xs uppercase text-slate-400">Last Deploy</p>
+                <p class="mt-2 text-2xl font-semibold">14m ago</p>
+                <p class="text-xs text-slate-500">User: admin@shipphp</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-3">
+            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft lg:col-span-2">
+              <h3 class="text-lg font-semibold">Live Activity</h3>
+              <div class="mt-4 space-y-3 text-sm">
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <p class="font-medium">Pull completed</p>
+                  <p class="text-xs text-slate-400">12 files updated · 2 mins ago</p>
+                </div>
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <p class="font-medium">Plan created</p>
+                  <p class="text-xs text-slate-400">Move uploads/2024 · 9 mins ago</p>
+                </div>
+                <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                  <p class="font-medium">Trash restored</p>
+                  <p class="text-xs text-slate-400">storage/logs/error.log · 45 mins ago</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 shadow-soft">
+              <h3 class="text-lg font-semibold">Next Steps</h3>
+              <ul class="mt-4 space-y-3 text-sm text-slate-300">
+                <li class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">Review plan before apply</li>
+                <li class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">Clean trash older than 7 days</li>
+                <li class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">Create pre-release backup</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
