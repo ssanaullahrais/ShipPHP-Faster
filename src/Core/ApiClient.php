@@ -532,4 +532,306 @@ class ApiClient
         $this->timeout = $seconds;
         return $this;
     }
+
+    // ============================================
+    // NEW FILE MANAGEMENT METHODS FOR WEB UI
+    // ============================================
+
+    /**
+     * Create directory on server
+     */
+    public function mkdir($path, $recursive = true)
+    {
+        $response = $this->request('mkdir', [
+            'path' => $path,
+            'recursive' => $recursive ? 1 : 0
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to create directory');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Create empty file on server
+     */
+    public function touch($path)
+    {
+        $response = $this->request('touch', ['path' => $path]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to create file');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Write content to file on server
+     */
+    public function writeFile($path, $content, $overwrite = false, $encoding = 'plain')
+    {
+        $response = $this->request('write', [
+            'path' => $path,
+            'content' => $encoding === 'base64' ? $content : $content,
+            'encoding' => $encoding,
+            'overwrite' => $overwrite ? 1 : 0
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to write file');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Read file content from server
+     */
+    public function readFile($path, $lines = 0, $offset = 0)
+    {
+        $response = $this->request('read', [
+            'path' => $path,
+            'lines' => $lines,
+            'offset' => $offset
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to read file');
+        }
+
+        // Decode content
+        if (isset($response['content'])) {
+            $response['content'] = base64_decode($response['content']);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Edit file on server
+     */
+    public function editFile($path, $content = null, $append = false, $find = null, $replace = null)
+    {
+        $params = ['path' => $path];
+
+        if ($find !== null && $replace !== null) {
+            $params['find'] = $find;
+            $params['replace'] = $replace;
+        } else {
+            $params['content'] = $content;
+            $params['append'] = $append ? 1 : 0;
+        }
+
+        $response = $this->request('edit', $params);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to edit file');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Copy file/directory on server
+     */
+    public function copyFile($source, $destination, $overwrite = false)
+    {
+        $response = $this->request('copy', [
+            'source' => $source,
+            'destination' => $destination,
+            'overwrite' => $overwrite ? 1 : 0
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to copy');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Change file permissions
+     */
+    public function chmod($path, $mode, $recursive = false)
+    {
+        $response = $this->request('chmod', [
+            'path' => $path,
+            'mode' => $mode,
+            'recursive' => $recursive ? 1 : 0
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to change permissions');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Get file/directory info
+     */
+    public function getFileInfo($path)
+    {
+        $response = $this->request('info', ['path' => $path]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to get file info');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Search for files by name
+     */
+    public function search($pattern, $path = '', $max = 100, $includeHidden = false)
+    {
+        $response = $this->request('search', [
+            'pattern' => $pattern,
+            'path' => $path,
+            'max' => $max,
+            'hidden' => $includeHidden ? 1 : 0
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Search failed');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Search file contents (grep)
+     */
+    public function grep($text, $path = '', $pattern = '*', $max = 50, $caseSensitive = false, $context = 0)
+    {
+        $response = $this->request('grep', [
+            'text' => $text,
+            'path' => $path,
+            'pattern' => $pattern,
+            'max' => $max,
+            'case' => $caseSensitive ? 1 : 0,
+            'context' => $context
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Grep failed');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Get server statistics
+     */
+    public function getStats()
+    {
+        $response = $this->request('stats', []);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to get stats');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Get server logs
+     */
+    public function getLogs($lines = 100, $filter = '')
+    {
+        $response = $this->request('logs', [
+            'lines' => $lines,
+            'filter' => $filter
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to get logs');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Get directory tree
+     */
+    public function getTree($path = '', $depth = 3, $showHidden = false, $showFiles = true)
+    {
+        $response = $this->request('tree', [
+            'path' => $path,
+            'depth' => $depth,
+            'hidden' => $showHidden ? 1 : 0,
+            'dirs_only' => $showFiles ? 0 : 1
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to get tree');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Watch for file changes
+     */
+    public function watch($since = '', $path = '')
+    {
+        $response = $this->request('watch', [
+            'since' => $since,
+            'path' => $path
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Watch failed');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Empty trash
+     */
+    public function emptyTrash()
+    {
+        $response = $this->request('emptyTrash', []);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Failed to empty trash');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Rename files (batch rename with find/replace)
+     */
+    public function rename($path, $find, $replace, $pattern = '*')
+    {
+        $response = $this->request('rename', [
+            'path' => $path,
+            'find' => $find,
+            'replace' => $replace,
+            'pattern' => $pattern
+        ]);
+
+        if (!$response['success']) {
+            throw new \Exception($response['error'] ?? 'Rename failed');
+        }
+
+        return $response;
+    }
+
+    /**
+     * Get health status
+     */
+    public function getHealth()
+    {
+        $response = $this->request('health', []);
+
+        // Health endpoint returns success even for unhealthy status
+        return $response;
+    }
 }

@@ -64,9 +64,30 @@ shipphp server generate <name>        # Generate server file & create profile
 shipphp token show                    # Show current authentication token
 shipphp token rotate                  # Generate new token (requires server upload)
 
+# File Management (NEW)
+shipphp mkdir <path>                  # Create directory on server
+shipphp touch <path>                  # Create empty file on server
+shipphp write <path> --content="..."  # Write content to file
+shipphp write <path> --from=local.txt # Write from local file
+shipphp read <path>                   # Read file content from server
+shipphp read <path> --save=local.txt  # Download to local file
+shipphp copy <src> --to=<dest>        # Copy file/directory on server
+shipphp chmod <path> 755              # Change file permissions
+shipphp chmod <path> 644 --recursive  # Recursive permissions
+shipphp info <path>                   # Get file/directory details
+shipphp search "*.php"                # Search files by name pattern
+shipphp search "config*" --path=src   # Search in specific directory
+shipphp grep "function"               # Search file contents
+shipphp grep "TODO" --pattern="*.php" # Search in specific file types
+
 # Server Utilities
 shipphp health                        # Check server health
 shipphp health --detailed             # Detailed health diagnostics
+shipphp stats                         # Show server statistics
+shipphp logs                          # View server logs
+shipphp logs --lines=100 --filter=error  # Filter logs
+shipphp watch                         # Watch for file changes (realtime)
+shipphp watch --interval=5            # Custom poll interval
 shipphp tree [path]                   # Show server file tree
 shipphp where                         # Show server base directory
 shipphp delete <path>                 # Delete/trash files on server
@@ -87,6 +108,12 @@ shipphp plan                          # View queued operations
 shipphp plan clear                    # Clear queued operations
 shipphp apply                         # Execute all queued operations
 
+# Web UI (NEW)
+shipphp web                           # Launch web UI at localhost:8080
+shipphp web --port=3000               # Custom port
+shipphp web --host=0.0.0.0            # Allow external access
+shipphp web --open                    # Open browser automatically
+
 # Utilities
 shipphp diff [file]                   # Show hash differences
 ```
@@ -102,7 +129,12 @@ shipphp/
 ├── templates/               # Template files
 │   └── shipphp-server.template.php  # Server-side receiver template
 ├── src/
-│   ├── Commands/            # Command classes (25 commands)
+│   ├── Api/                 # REST API for Web UI (NEW)
+│   │   ├── router.php           # PHP built-in server router
+│   │   ├── ApiServer.php        # Main API handler
+│   │   ├── Request.php          # HTTP request parser
+│   │   └── Response.php         # JSON response builder
+│   ├── Commands/            # Command classes (38 commands)
 │   │   ├── ApplyCommand.php       # Execute queued operations
 │   │   ├── BackupCommand.php      # Version-tracked backup system
 │   │   ├── BaseCommand.php        # Shared command logic
@@ -619,9 +651,90 @@ class MyCommand extends BaseCommand
 | `--local` | Target local for backup operations |
 | `--both` | Target both local and server |
 | `--all` | Apply to all items |
+| `--port` | Port for web server (default: 8080) |
+| `--host` | Host for web server (default: localhost) |
+| `--open` | Open browser automatically |
+| `--lines` | Number of lines to read/show |
+| `--interval` | Poll interval for watch command |
+| `--recursive, -R` | Apply recursively |
+| `--save` | Save output to file |
+| `--raw` | Raw output without formatting |
+
+## Web UI & REST API
+
+### Launching Web UI
+
+```bash
+shipphp web                    # Start at http://localhost:8080
+shipphp web --port=3000        # Custom port
+shipphp web --open             # Open browser automatically
+```
+
+### REST API Endpoints
+
+The web UI communicates via REST API at `/api/`:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Server health check |
+| `/api/status` | GET | Get file changes |
+| `/api/push` | POST | Deploy files to server |
+| `/api/pull` | POST | Download files from server |
+| `/api/files/tree` | GET | Get directory tree |
+| `/api/files/read` | GET | Read file content |
+| `/api/files/write` | POST | Write/create file |
+| `/api/files/mkdir` | POST | Create directory |
+| `/api/files/touch` | POST | Create empty file |
+| `/api/files/copy` | POST | Copy file/directory |
+| `/api/files/move` | POST | Move files |
+| `/api/files/rename` | PUT | Rename files |
+| `/api/files/chmod` | PUT | Change permissions |
+| `/api/files/info` | GET | Get file info |
+| `/api/files/search` | GET | Search files by name |
+| `/api/files/grep` | GET | Search file contents |
+| `/api/files` | DELETE | Delete file |
+| `/api/trash` | GET | List trashed items |
+| `/api/trash/{id}/restore` | POST | Restore from trash |
+| `/api/trash` | DELETE | Empty trash |
+| `/api/backups` | GET | List backups |
+| `/api/backups` | POST | Create backup |
+| `/api/backups/{id}/restore` | POST | Restore backup |
+| `/api/backups/{id}` | DELETE | Delete backup |
+| `/api/plans` | GET | View queued operations |
+| `/api/plans` | POST | Add operation to queue |
+| `/api/plans/apply` | POST | Execute queue |
+| `/api/profiles` | GET | List profiles |
+| `/api/server/lock` | POST | Toggle maintenance |
+| `/api/server/stats` | GET | Server statistics |
+| `/api/server/watch` | GET | Watch for changes |
+| `/api/logs` | GET | Server logs |
+
+### API Response Format
+
+All API responses use JSON:
+
+```json
+{
+  "success": true,
+  "message": "Operation completed",
+  "data": {
+    // Response data
+  }
+}
+```
+
+Error responses:
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "code": 400
+}
+```
 
 ## Version History
 
+- **v2.2.0** - Web UI with REST API, file management commands (mkdir, touch, write, read, copy, chmod, search, grep, info, stats, logs, watch)
 - **v2.1.1** - Centralized version reporting, profile persistence
 - **v2.1.0** - Config isolation, direct path overrides, server utilities
 - **v2.0.0** - Initial public release with core deployment features
