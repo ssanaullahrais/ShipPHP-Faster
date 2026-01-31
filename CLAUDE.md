@@ -1,53 +1,94 @@
-﻿# CLAUDE.md
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-**ShipPHP Faster** is a professional, git-like PHP deployment tool that provides secure push/pull functionality for syncing files between a local development environment and a web server. It features automatic change detection, comprehensive backup/restore functionality, and enterprise-grade security.
+**ShipPHP Faster** (v2.1.1) is a professional, git-like PHP deployment tool that provides secure push/pull functionality for syncing files between a local development environment and a web server. It features automatic change detection, comprehensive backup/restore functionality, global profile management, operation planning, and enterprise-grade security.
 
 ### Key Components
 
 - **shipphp.php** - Main CLI application entry point
-- **shipphp-server.php** - Server-side receiver script
+- **version.php** - Single source of truth for version number
+- **shipphp-server.php** - Server-side receiver script (generated during init)
 - **src/** - Modular architecture with Commands, Core, Helpers, and Security
 - **shipphp.json** - Project configuration (generated during init)
-- **.gitignore** - Automatically generated ignore patterns
+- **~/.shipphp/profiles.json** - Global profile storage
 
 ## Development Commands
 
 All commands run from the repository root using PHP CLI:
 
 ```bash
-# Setup & Initialization
-php shipphp/shipphp.php init                 # Interactive initialization with full config
-php shipphp/shipphp.php bootstrap ./ship     # Create bootstrap file for easier usage
+# Setup & Configuration
+shipphp install --global              # Install globally (use from anywhere)
+shipphp init                          # Initialize project in current directory
+shipphp login                         # Connect project to a global profile
+shipphp bootstrap ./ship              # Create bootstrap file for shorter commands
+shipphp env [name]                    # Switch between environments
 
 # Deployment
-php shipphp/shipphp.php status               # Check what changed
-php shipphp/shipphp.php push                 # Deploy changes to server
-php shipphp/shipphp.php pull                 # Download server changes
-php shipphp/shipphp.php sync                 # Status + Push with confirmation
+shipphp status                        # Show changes since last sync
+shipphp push [path]                   # Upload changed files to server
+shipphp pull [path]                   # Download changed files from server
+shipphp sync                          # Status + Push (with confirmation)
+shipphp push local.php --to=remote.php    # Push to specific server path
+shipphp pull remote.php --to=local.php    # Pull to specific local path
 
 # Backup Management (Version Tracked)
-php shipphp/shipphp.php backup               # List all backups
-php shipphp/shipphp.php backup create        # Create local backup (auto-versioned)
-php shipphp/shipphp.php backup create --server   # Create and upload to server
-php shipphp/shipphp.php backup restore <id>      # Restore from local backup
-php shipphp/shipphp.php backup restore <id> --server  # Download and restore from server
-php shipphp/shipphp.php backup sync <id>         # Upload specific backup to server
-php shipphp/shipphp.php backup sync --all        # Upload all local backups to server
-php shipphp/shipphp.php backup pull <id>         # Download specific backup from server
-php shipphp/shipphp.php backup pull --all        # Download all backups from server
-php shipphp/shipphp.php backup delete <id> --local   # Delete from local only
-php shipphp/shipphp.php backup delete <id> --server  # Delete from server only
-php shipphp/shipphp.php backup delete <id> --both    # Delete from both
-php shipphp/shipphp.php backup delete --all          # Delete all backups (with confirmation)
-php shipphp/shipphp.php backup stats         # Show backup comparison table (local & server)
+shipphp backup                        # List all local backups
+shipphp backup create                 # Create local backup (auto-versioned)
+shipphp backup create --server        # Create and upload to server
+shipphp backup restore <id>           # Restore from local backup
+shipphp backup restore <id> --server  # Download and restore from server
+shipphp backup restore-server <id>    # Restore server files from server backup
+shipphp backup sync <id>              # Upload specific backup to server
+shipphp backup sync --all             # Upload all local backups to server
+shipphp backup pull <id>              # Download specific backup from server
+shipphp backup pull --all             # Download all backups from server
+shipphp backup delete <id> --local    # Delete from local only
+shipphp backup delete <id> --server   # Delete from server only
+shipphp backup delete <id> --both     # Delete from both
+shipphp backup delete --all           # Delete all backups (with confirmation)
+shipphp backup stats                  # Show backup comparison table
+
+# Profile Management
+shipphp profile list                  # List all global profiles
+shipphp profile add                   # Add new profile interactively
+shipphp profile show <name>           # Show profile details
+shipphp profile use <name>            # Set default profile
+shipphp profile remove <name>         # Remove profile
+shipphp server generate <name>        # Generate server file & create profile
+
+# Security
+shipphp token show                    # Show current authentication token
+shipphp token rotate                  # Generate new token (requires server upload)
+
+# Server Utilities
+shipphp health                        # Check server health
+shipphp health --detailed             # Detailed health diagnostics
+shipphp tree [path]                   # Show server file tree
+shipphp where                         # Show server base directory
+shipphp delete <path>                 # Delete/trash files on server
+shipphp delete <path> --pattern=*.log # Pattern-based deletion
+shipphp delete <path> --permanent     # Permanently delete (no trash)
+shipphp trash                         # List trashed items
+shipphp trash restore <id>            # Restore from trash
+shipphp move <path> --to=<dest>       # Move files on server
+shipphp move <path> --to=<dest> --copy  # Copy files on server
+shipphp rename <path> --find=X --replace=Y  # Batch rename files
+shipphp lock on --message="Maintenance"    # Enable maintenance mode
+shipphp lock off                      # Disable maintenance mode
+shipphp extract <zip>                 # Extract zip archive on server
+
+# Operation Planning
+shipphp delete <path> --plan          # Queue operation instead of executing
+shipphp plan                          # View queued operations
+shipphp plan clear                    # Clear queued operations
+shipphp apply                         # Execute all queued operations
 
 # Utilities
-php shipphp/shipphp.php env [name]           # Switch environments
-php shipphp/shipphp.php diff [file]          # Show hash differences
+shipphp diff [file]                   # Show hash differences
 ```
 
 ## Architecture & Code Structure
@@ -57,26 +98,51 @@ php shipphp/shipphp.php diff [file]          # Show hash differences
 ```
 shipphp/
 ├── shipphp.php              # CLI entry point with autoloader
+├── version.php              # Single source of version number
 ├── templates/               # Template files
 │   └── shipphp-server.template.php  # Server-side receiver template
 ├── src/
-│   ├── Commands/            # Command classes (one per command)
-│   │   ├── InitCommand.php        # Interactive initialization
-│   │   ├── StatusCommand.php      # Show changes
-│   │   ├── PushCommand.php        # Deploy to server
-│   │   ├── PullCommand.php        # Download from server
+│   ├── Commands/            # Command classes (25 commands)
+│   │   ├── ApplyCommand.php       # Execute queued operations
 │   │   ├── BackupCommand.php      # Version-tracked backup system
-│   │   └── BaseCommand.php        # Shared command logic
+│   │   ├── BaseCommand.php        # Shared command logic
+│   │   ├── BootstrapCommand.php   # Create bootstrap files
+│   │   ├── DeleteCommand.php      # Delete/trash server files
+│   │   ├── DiffCommand.php        # Show file differences
+│   │   ├── EnvCommand.php         # Environment switching
+│   │   ├── ExtractCommand.php     # Extract zip archives
+│   │   ├── HealthCommand.php      # Server health checks
+│   │   ├── InitCommand.php        # Interactive initialization
+│   │   ├── InstallCommand.php     # Global installation
+│   │   ├── LockCommand.php        # Maintenance mode toggle
+│   │   ├── LoginCommand.php       # Connect to global profiles
+│   │   ├── MoveCommand.php        # Move/copy server files
+│   │   ├── PlanCommand.php        # View/clear queued operations
+│   │   ├── ProfileCommand.php     # Profile management
+│   │   ├── PullCommand.php        # Download from server
+│   │   ├── PushCommand.php        # Deploy to server
+│   │   ├── RenameCommand.php      # Batch rename files
+│   │   ├── ServerCommand.php      # Server file generation
+│   │   ├── StatusCommand.php      # Show changes
+│   │   ├── SyncCommand.php        # Status + Push
+│   │   ├── TokenCommand.php       # Token management
+│   │   ├── TrashCommand.php       # Trash management
+│   │   ├── TreeCommand.php        # Server file tree
+│   │   └── WhereCommand.php       # Show server base directory
 │   ├── Core/                # Core functionality
+│   │   ├── ApiClient.php          # Server communication
 │   │   ├── Application.php        # Command router
-│   │   ├── Config.php            # Configuration manager
-│   │   ├── State.php             # File state tracking
-│   │   ├── Backup.php            # Backup management
-│   │   └── ApiClient.php         # Server communication
+│   │   ├── Backup.php             # Backup management
+│   │   ├── Config.php             # Configuration manager
+│   │   ├── PlanManager.php        # Operation queue management
+│   │   ├── ProfileManager.php     # Global profile storage
+│   │   ├── ProjectPaths.php       # Config/state path resolution
+│   │   ├── State.php              # File state tracking
+│   │   └── VersionChecker.php     # Update checking via GitHub API
 │   ├── Helpers/
-│   │   └── Output.php            # CLI output formatting
+│   │   └── Output.php             # CLI output formatting
 │   └── Security/
-│       └── Security.php          # Token generation & validation
+│       └── Security.php           # Token generation & validation
 ```
 
 ### Command Pattern
@@ -90,6 +156,7 @@ public function execute($options)
     // - $this->state (State instance)
     // - $this->backup (Backup instance)
     // - $this->output (Output instance)
+    // - $this->plan (PlanManager instance)
 }
 ```
 
@@ -104,6 +171,15 @@ Uses REST-like HTTP API with 64-character token authentication:
 - `upload` - Upload single file
 - `download` - Download single file
 - `delete` - Delete file/directory
+- `trash` - Move to trash
+- `trashList` - List trashed items
+- `trashRestore` - Restore from trash
+- `move` - Move files on server
+- `rename` - Rename files on server
+- `extract` - Extract zip archives
+- `lock` - Toggle maintenance mode
+- `tree` - Get file tree structure
+- `where` - Get base directory
 - `backup` - Create server backup
 - `backups` - List server backups
 - `restore` - Restore server backup
@@ -119,13 +195,44 @@ Uses REST-like HTTP API with 64-character token authentication:
 
 ## Configuration System
 
+### Directory Structure Options
+
+ShipPHP supports two configuration layouts:
+
+**Isolated Config (Recommended):**
+```
+project-root/
+├── shipphp-config/          # All ShipPHP files isolated
+│   ├── shipphp.json
+│   ├── shipphp-server.php
+│   └── .shipphp/
+│       ├── state.json
+│       ├── profile.link     # Profile reference
+│       └── plan.json        # Queued operations
+└── (your project files)
+```
+
+**Legacy Root-Level Config:**
+```
+project-root/
+├── shipphp.json
+├── shipphp-server.php
+├── .shipphp/
+│   ├── state.json
+│   ├── profile.link
+│   └── plan.json
+└── (your project files)
+```
+
+The `ProjectPaths` class automatically detects which layout is in use.
+
 ### shipphp.json Structure
 
 Generated during `init`, stores all project configuration:
 
 ```json
 {
-  "version": "2.0.0",
+  "version": "2.1.1",
   "serverUrl": "https://example.com/shipphp-server.php",
   "token": "64-character-hexadecimal-token",
   "deleteOnPush": false,
@@ -152,6 +259,34 @@ Generated during `init`, stores all project configuration:
 }
 ```
 
+### Global Profile System
+
+Profiles are stored globally at `~/.shipphp/profiles.json`:
+
+```json
+{
+  "profiles": {
+    "myblog-com-a3f9": {
+      "projectName": "My Blog",
+      "domain": "myblog.com",
+      "serverUrl": "https://myblog.com/shipphp-server.php",
+      "token": "64-character-token",
+      "created": "2026-01-27 14:30:22",
+      "updated": "2026-01-27 14:30:22"
+    }
+  },
+  "default": "myblog-com-a3f9",
+  "version": "2.1.0"
+}
+```
+
+**Profile Features:**
+- Cross-platform home directory detection
+- Secure file permissions (chmod 600)
+- Unique ID generation from domain names
+- Default profile support
+- Profile linking via `.shipphp/profile.link`
+
 ### .gitignore Integration
 
 **Automatic Generation:**
@@ -162,40 +297,6 @@ Generated during `init`, stores all project configuration:
 - Config class reads .gitignore on load
 - Patterns merged with shipphp.json ignore list
 - Both sources respected during file scanning
-
-**Benefits:**
-- Standard Git ignore patterns work automatically
-- Users can edit .gitignore as usual
-- No need to duplicate patterns in shipphp.json
-
-### Server Configuration (shipphp-server.php)
-
-During `init`, you interactively configure:
-
-**Max File Size:**
-- Recommended: 100MB for most projects
-- Range: 1MB - 2048MB
-- Validation: Auto-corrects invalid values
-
-**Server-Side Backups:**
-- Creates backups before destructive operations on server
-- Provides extra safety layer
-- Configurable retention (default: 10 backups)
-
-**IP Whitelist:**
-- Optional: Restrict access to specific IPs
-- Supports CIDR notation (e.g., 10.0.0.0/8)
-- Can be left empty to allow all IPs
-
-**Rate Limiting:**
-- Prevents brute-force attacks
-- Default: 120 requests/minute
-- Range: 10 - 1000 requests/min
-
-**Logging:**
-- Logs all requests to .shipphp-server.log
-- Helps troubleshooting and security auditing
-- Recommended: Enabled
 
 ### File Exclusion System
 
@@ -214,7 +315,6 @@ Files are excluded from sync if:
 - Backups are created on-demand using `backup create` command
 - Each backup gets an automatic semantic version (v2.0.0, v2.0.1, v2.0.2, etc.)
 - Versions increment automatically with each new backup
-- No automatic backups - full control over when backups are created
 
 **Backup Storage:**
 - Local: `/backup/` directory in project root
@@ -240,64 +340,29 @@ Files are excluded from sync if:
 }
 ```
 
-### Backup Commands
+## Operation Planning System
 
-**Create Local Backup:**
+Queue operations for later execution using the `--plan` flag:
+
 ```bash
-shipphp backup create
+# Queue operations
+shipphp delete logs --pattern=*.log --plan
+shipphp move uploads/old --to=archive --plan
+shipphp rename images --find=-thumb --replace=-small --plan
+
+# View queued operations
+shipphp plan
+
+# Execute all queued operations
+shipphp apply
+
+# Clear queue without executing
+shipphp plan clear
 ```
-Creates a versioned backup of all project files (respecting .gitignore).
 
-**Create and Upload to Server:**
-```bash
-shipphp backup create --server
-```
-Creates local backup and immediately uploads it to the server.
+**Storage:** `.shipphp/plan.json` in state directory
 
-**List All Backups:**
-```bash
-shipphp backup
-```
-Shows all local backups with version numbers, file counts, and sizes.
-
-**Restore from Local Backup:**
-```bash
-shipphp backup restore 2026-01-27-143022-v2.0.0
-```
-Restores all files from the specified backup (with confirmation).
-
-**Download and Restore from Server:**
-```bash
-shipphp backup restore 2026-01-27-143022-v2.0.0 --server
-```
-Downloads backup from server first, then restores it locally.
-
-**Sync Specific Backup to Server:**
-```bash
-shipphp backup sync 2026-01-27-143022-v2.0.0
-```
-Uploads a specific backup to the server.
-
-**Sync All Backups to Server:**
-```bash
-shipphp backup sync --all
-```
-Uploads all local backups to the server for safekeeping.
-
-### Version Tracking Features
-
-- **Automatic versioning**: Starts at v2.0.0, increments patch version automatically
-- **Version history**: `.versions.json` tracks all backup versions
-- **Easy identification**: Version in directory name for quick reference
-- **Independent local/server**: Can maintain different backups locally vs. server
-
-### Safety Features
-
-- **Confirmation prompts** for all restore operations
-- **Detailed preview** showing what will be restored
-- **File validation** ensures backup integrity
-- **Error recovery** with detailed error messages
-- **Respects .gitignore** - only backs up relevant files
+**Supported Operations:** delete, move, rename
 
 ## Security Architecture
 
@@ -307,6 +372,7 @@ Uploads all local backups to the server for safekeeping.
 - 64-character hexadecimal tokens (256-bit security)
 - Timing-safe comparison prevents timing attacks
 - Auto-generated during initialization
+- Token rotation via `token rotate` command
 
 **Path Security:**
 - Strict path traversal prevention
@@ -321,122 +387,87 @@ Uploads all local backups to the server for safekeeping.
 **File Security:**
 - SHA256 hashing for integrity verification
 - File size limits (configurable)
-- File type validation (optional)
 - Uploaded files set to 0644, directories to 0755
 
 **Request Security:**
 - All requests logged for audit trail
 - Failed authentication attempts logged
-- Detailed error messages in logs only (not responses)
 - Security headers (X-Frame-Options, X-XSS-Protection, etc.)
 
 ## Initial Setup Workflow
 
-### Interactive Initialization
+### Option 1: New Project Setup
 
 ```bash
 cd /path/to/your/project
-php shipphp/shipphp.php init
+shipphp init                    # Interactive setup
+# Upload shipphp-server.php to your server
+shipphp status                  # Test connection
+shipphp push                    # Deploy everything
 ```
 
-The init command will interactively ask:
-
-1. **Domain/URL** - Where your project runs (e.g., example.com)
-2. **Max File Size** - Upload limit with recommendations
-3. **IP Whitelist** - Optional IP restrictions
-4. **Rate Limit** - API request throttling
-5. **Logging** - Request logging for debugging
-
-**What Gets Created:**
-- `.gitignore` - Git ignore patterns (if doesn't exist)
-- `shipphp.json` - Your configuration
-- `shipphp-server.php` - Fully configured server file
-- `.shipphp/` - State directory
-- `.shipphp/state.json` - File tracking database
-- `/backup/` - Created when you run your first backup
-
-**Next Steps:**
-1. Upload `shipphp-server.php` to your server
-2. Run `shipphp status` to test connection
-3. Run `shipphp push` to deploy
-
-### Security Best Practices
-
-✅ **DO:**
-- Use the auto-generated 64-character token
-- Add `shipphp.json` to `.gitignore` if token is sensitive
-- Review logs regularly (`.shipphp-server.log`)
-- Create regular backups using `backup create`
-- Use IP whitelist for sensitive deployments
-- Test with `--dry-run` first
-
-❌ **DON'T:**
-- Share tokens publicly or commit to repos
-- Forget to create backups before major changes
-- Use `--force` without understanding consequences
-- Skip confirmations on destructive operations
-- Ignore security warnings
-
-## Typical Development Workflow
-
-### First Deployment
+### Option 2: Connect to Existing Profile
 
 ```bash
-1. cd /path/to/project
-2. php shipphp/shipphp.php init          # Interactive setup
-3. # Upload shipphp-server.php to server
-4. php shipphp/shipphp.php status        # Test connection
-5. php shipphp/shipphp.php push          # Deploy everything
+cd /path/to/your/project
+shipphp login                   # Select from global profiles
+shipphp status                  # Test connection
+shipphp push                    # Deploy
 ```
+
+### Global Installation
+
+```bash
+shipphp install --global        # Install globally
+# Now use 'shipphp' command from anywhere
+```
+
+## Typical Development Workflow
 
 ### Daily Development
 
 ```bash
 # Make changes to your files...
-
-php shipphp/shipphp.php status           # Check what changed
-php shipphp/shipphp.php push             # Deploy changes
+shipphp status                  # Check what changed
+shipphp push                    # Deploy changes
 ```
 
-ShipPHP automatically tracks ALL file changes using SHA256 hashes - no manual staging required!
-
-### Backup Management
+### Profile Management
 
 ```bash
-php shipphp/shipphp.php backup create    # Create versioned backup
-php shipphp/shipphp.php backup           # List all backups
-php shipphp/shipphp.php backup restore <id>  # Restore from backup
-php shipphp/shipphp.php backup pull --all    # Download all backups from server
-php shipphp/shipphp.php backup delete <id> --both  # Delete backup from both
-php shipphp/shipphp.php backup stats     # Compare local vs server backups
+shipphp profile list            # View all profiles
+shipphp profile add             # Add new profile
+shipphp profile use mysite      # Switch default profile
+shipphp profile show mysite     # View profile details
 ```
 
-### Advanced Workflows
+### Server File Operations
 
-**Multi-Environment Deployment:**
 ```bash
-php shipphp/shipphp.php env staging      # Switch to staging
-php shipphp/shipphp.php push             # Deploy to staging
-php shipphp/shipphp.php env production   # Switch to production
-php shipphp/shipphp.php push             # Deploy to production
+shipphp tree                    # View server structure
+shipphp tree public/images      # View specific directory
+shipphp delete cache --pattern=*.tmp  # Delete temp files
+shipphp trash                   # View deleted files
+shipphp trash restore abc123    # Recover deleted file
+shipphp move old --to=archive   # Move directory
+shipphp lock on --message="Updating..."  # Maintenance mode
 ```
 
-**Backup with Server Sync:**
+### Multi-Environment Deployment
+
 ```bash
-php shipphp/shipphp.php backup create --server  # Create and upload to server
-php shipphp/shipphp.php backup sync --all       # Sync all backups to server
-php shipphp/shipphp.php backup pull --all       # Download all backups from server
-php shipphp/shipphp.php backup restore <id> --server  # Restore from server
-php shipphp/shipphp.php backup delete <id> --both     # Delete from both locations
-php shipphp/shipphp.php backup stats            # View comparison table
+shipphp env staging             # Switch to staging
+shipphp push                    # Deploy to staging
+shipphp env production          # Switch to production
+shipphp push                    # Deploy to production
 ```
 
 ## Code Style Conventions
 
 - **Indentation**: 4 spaces (no tabs)
-- **Constants**: UPPER_SNAKE_CASE (e.g., `SHIPPHP_TOKEN`)
-- **Classes**: PascalCase (e.g., `InitCommand`, `ApiClient`)
-- **Methods**: camelCase (e.g., `generateServerFile`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `SHIPPHP_TOKEN`, `SHIPPHP_VERSION`)
+- **Classes**: PascalCase (e.g., `InitCommand`, `ApiClient`, `ProfileManager`)
+- **Methods**: camelCase (e.g., `generateServerFile`, `getHomeDirectory`)
 - **Namespaces**: `ShipPHP\Commands`, `ShipPHP\Core`
 - **File names**: PascalCase for classes, lowercase for executables
 
@@ -452,6 +483,12 @@ try {
     $this->output->writeln();
 }
 ```
+
+### User-Friendly Error Messages
+
+The `Application.php` handles common errors with friendly guidance:
+- "Project Not Initialized" - Suggests `init` or `login` commands
+- "Server Configuration Incomplete" - Guides to reconfigure
 
 ### API Communication Errors
 
@@ -470,21 +507,13 @@ All JSON responses include:
 }
 ```
 
-### User-Friendly Output
-
-- Success: Green checkmark (✓) with success message
-- Error: Red X (✗) with error details
-- Warning: Yellow triangle (⚠) with warning
-- Info: Blue (ℹ) with information
-- Progress bars for file operations
-
 ## Adding New Commands
 
 1. Create command class in `src/Commands/`
 2. Extend `BaseCommand`
 3. Implement `execute($options)` method
-4. Register in `src/Core/Application.php`
-5. Add to help text
+4. Register in `src/Core/Application.php` commands array
+5. Add to help text in `showHelp()` method
 
 Example:
 ```php
@@ -499,6 +528,16 @@ class MyCommand extends BaseCommand
         $this->header("My Command");
 
         // Command logic here
+
+        // Access plan manager for queued operations
+        if (isset($options['flags']['plan'])) {
+            $this->plan->addOperation([
+                'type' => 'myoperation',
+                'data' => $someData
+            ])->save();
+            $this->output->success("Operation queued");
+            return;
+        }
 
         $this->output->success("Done!");
     }
@@ -520,13 +559,32 @@ class MyCommand extends BaseCommand
 - **Efficient scanning**: Only scans non-ignored files
 - **Change detection**: Compares local vs server state accurately
 
-### Backup.php Management
+### ProfileManager.php Features
 
-- **Version tracking**: Automatic semantic versioning (v2.0.0, v2.0.1, etc.)
-- **Local backups**: Stored in `/backup/` directory
-- **Manifest system**: JSON metadata for each backup with version info
-- **Server sync**: Upload/download backups to/from server
-- **Respects .gitignore**: Only backs up project files, not dependencies
+- **Global storage**: `~/.shipphp/profiles.json`
+- **Cross-platform**: Windows/Unix/Mac home directory detection
+- **Secure permissions**: chmod 600 for profile file
+- **Profile ID generation**: Domain-based unique IDs (e.g., `myblog-com-a3f9`)
+- **Default profile**: First profile auto-set as default
+
+### PlanManager.php Features
+
+- **Operation queuing**: Store operations for batch execution
+- **Persistent storage**: `.shipphp/plan.json`
+- **Clear and apply**: Execute all queued ops or clear queue
+
+### ProjectPaths.php Features
+
+- **Auto-detection**: Detects isolated (`shipphp-config/`) vs legacy root config
+- **Consistent paths**: All path resolution goes through this class
+- **Methods**: `configDir()`, `configFile()`, `stateDir()`, `stateFile()`, `serverFile()`, `linkFile()`
+
+### VersionChecker.php Features
+
+- **GitHub API integration**: Checks latest release version
+- **24-hour cache**: Prevents excessive API calls
+- **Update notifications**: Shows update commands in dashboard
+- **Installation type detection**: Global vs local installation
 
 ### Output.php Formatting
 
@@ -536,16 +594,34 @@ class MyCommand extends BaseCommand
 - **Boxes**: Highlighted information
 - **Interactive prompts**: Yes/no confirmations, text input
 
-## Key Differences from Legacy deploy.php
+## Command-Line Options Reference
 
-| Feature | Legacy | ShipPHP Faster |
-|---------|--------|----------------|
-| Architecture | Single file | Modular (Commands/Core/Helpers) |
-| Configuration | Hard-coded constants | JSON config file |
-| Initialization | Manual editing | Interactive `init` command |
-| Backups | None | Version-tracked manual backups |
-| .gitignore | Not supported | Automatically respected |
-| Server Config | Manual editing | Generated during init |
-| Security | Basic token | Multi-layer (token, IP, rate limit) |
-| Logging | Minimal | Comprehensive audit trail |
-| Error Handling | Basic | User-friendly with recovery |
+| Option | Description |
+|--------|-------------|
+| `--help, -h` | Show help information |
+| `--version, -v` | Show version information |
+| `--dry-run` | Preview changes without executing |
+| `--force` | Skip confirmations (use with caution) |
+| `--plan` | Queue operation instead of executing |
+| `--pattern` | Filter by glob pattern |
+| `--exclude` | Exclude files by glob pattern |
+| `--select-all` | Select all items matching criteria |
+| `--permanent` | Permanently delete instead of trash |
+| `--message` | Custom message for maintenance lock |
+| `--detailed, -d` | Show detailed output |
+| `--yes, -y` | Auto-confirm all prompts |
+| `--to` | Target path for push/pull/move operations |
+| `--from` | Source path override |
+| `--copy` | Copy instead of move |
+| `--find` | Find pattern for batch rename |
+| `--replace` | Replace pattern for batch rename |
+| `--server` | Target server for backup operations |
+| `--local` | Target local for backup operations |
+| `--both` | Target both local and server |
+| `--all` | Apply to all items |
+
+## Version History
+
+- **v2.1.1** - Centralized version reporting, profile persistence
+- **v2.1.0** - Config isolation, direct path overrides, server utilities
+- **v2.0.0** - Initial public release with core deployment features
