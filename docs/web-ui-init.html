@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ShipPHP Web UI - Init & Profiles</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .toast-enter {
+        animation: toastIn 0.25s ease-out;
+      }
+      @keyframes toastIn {
+        from {
+          transform: translateY(10px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    </style>
     <script>
       tailwind.config = {
         theme: {
@@ -82,11 +97,11 @@
             <div class="mt-6 grid gap-4 md:grid-cols-2">
               <div>
                 <label class="text-xs uppercase text-slate-400">Project Name</label>
-                <input class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm" placeholder="My Production App" />
+                <input id="project-name" class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm" placeholder="My Production App" />
               </div>
               <div>
                 <label class="text-xs uppercase text-slate-400">Environment</label>
-                <select class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm">
+                <select id="project-env" class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm">
                   <option>Production</option>
                   <option>Staging</option>
                   <option>Development</option>
@@ -94,46 +109,113 @@
               </div>
               <div>
                 <label class="text-xs uppercase text-slate-400">Server URL</label>
-                <input class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm" placeholder="https://example.com/shipphp-server.php" />
+                <input id="server-url" class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm" placeholder="https://example.com/shipphp-server.php" />
               </div>
               <div>
                 <label class="text-xs uppercase text-slate-400">Token</label>
-                <input class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm" placeholder="Paste token" />
+                <input id="server-token" class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm" placeholder="Paste token" />
               </div>
             </div>
 
             <div class="mt-6 flex items-center justify-between">
               <div class="text-xs text-slate-400">Generate server file &amp; upload on your hosting first.</div>
-              <button class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white">Continue</button>
+              <button class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white" onclick="saveProfile()">Continue</button>
             </div>
           </div>
 
           <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-6 shadow-soft">
             <h3 class="text-lg font-semibold">Profiles</h3>
             <p class="text-sm text-slate-400">Choose an existing profile instead of creating a new one.</p>
-            <div class="mt-4 grid gap-3 md:grid-cols-2">
-              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-sm font-semibold text-white">production-main</p>
-                    <p class="text-xs text-slate-400">app.example.com</p>
-                  </div>
-                  <button class="rounded-full bg-emerald-500/20 px-3 py-1 text-xs text-emerald-200">Use</button>
-                </div>
-              </div>
-              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-sm font-semibold text-white">staging-team</p>
-                    <p class="text-xs text-slate-400">staging.example.com</p>
-                  </div>
-                  <button class="rounded-full bg-indigo-500/20 px-3 py-1 text-xs text-indigo-200">Use</button>
-                </div>
-              </div>
-            </div>
+            <div id="profile-list" class="mt-4 grid gap-3 md:grid-cols-2"></div>
           </div>
         </section>
       </main>
     </div>
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2"></div>
+
+    <script>
+      const PROFILE_KEY = 'shipphp_profiles';
+      const SELECTED_KEY = 'shipphp_selected_profile';
+
+      function showToast(title, message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const styles = {
+          info: 'border-slate-700 bg-slate-900/90 text-slate-200',
+          success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100',
+          error: 'border-rose-500/40 bg-rose-500/10 text-rose-100',
+        };
+        toast.className = `toast-enter w-80 rounded-xl border px-4 py-3 shadow-soft ${styles[type]}`;
+        toast.innerHTML = `
+          <p class="text-sm font-semibold">${title}</p>
+          <p class="text-xs text-slate-300">${message}</p>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+      }
+
+      function getProfiles() {
+        const raw = localStorage.getItem(PROFILE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      }
+
+      function setProfiles(profiles) {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
+      }
+
+      function renderProfiles() {
+        const list = document.getElementById('profile-list');
+        const profiles = getProfiles();
+        if (profiles.length === 0) {
+          list.innerHTML = '<div class="text-sm text-slate-400">No profiles saved yet.</div>';
+          return;
+        }
+        list.innerHTML = profiles
+          .map(
+            (profile) => `
+              <div class="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-semibold text-white">${profile.name}</p>
+                    <p class="text-xs text-slate-400">${profile.url}</p>
+                  </div>
+                  <button class="rounded-full bg-emerald-500/20 px-3 py-1 text-xs text-emerald-200" onclick="selectProfile('${profile.id}')">Use</button>
+                </div>
+              </div>
+            `
+          )
+          .join('');
+      }
+
+      function saveProfile() {
+        const name = document.getElementById('project-name').value.trim();
+        const env = document.getElementById('project-env').value;
+        const url = document.getElementById('server-url').value.trim();
+        const token = document.getElementById('server-token').value.trim();
+
+        if (!name || !url || !token) {
+          showToast('Missing fields', 'Please fill in project name, server URL, and token.', 'error');
+          return;
+        }
+
+        const profiles = getProfiles();
+        const profile = { id: crypto.randomUUID(), name, env, url, token };
+        profiles.push(profile);
+        setProfiles(profiles);
+        localStorage.setItem(SELECTED_KEY, profile.id);
+        showToast('Initialized', 'Project setup saved.', 'success');
+        renderProfiles();
+      }
+
+      function selectProfile(id) {
+        localStorage.setItem(SELECTED_KEY, id);
+        const profile = getProfiles().find((item) => item.id === id);
+        if (profile) {
+          showToast('Profile selected', `${profile.name} applied.`, 'info');
+        }
+      }
+
+      renderProfiles();
+    </script>
   </body>
 </html>
