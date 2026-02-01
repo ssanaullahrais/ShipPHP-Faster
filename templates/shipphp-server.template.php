@@ -176,6 +176,71 @@ class ShipPHPServer
                     $this->actionDeleteBackup();
                     break;
 
+                // NEW: File management actions for Web UI
+                case 'mkdir':
+                    $this->actionMkdir();
+                    break;
+
+                case 'touch':
+                    $this->actionTouch();
+                    break;
+
+                case 'write':
+                    $this->actionWrite();
+                    break;
+
+                case 'read':
+                    $this->actionRead();
+                    break;
+
+                case 'edit':
+                    $this->actionEdit();
+                    break;
+
+                case 'copy':
+                    $this->actionCopy();
+                    break;
+
+                case 'chmod':
+                    $this->actionChmod();
+                    break;
+
+                case 'info':
+                    $this->actionFileInfo();
+                    break;
+
+                case 'search':
+                    $this->actionSearch();
+                    break;
+
+                case 'grep':
+                    $this->actionGrep();
+                    break;
+
+                case 'stats':
+                    $this->actionStats();
+                    break;
+
+                case 'logs':
+                    $this->actionLogs();
+                    break;
+
+                case 'tree':
+                    $this->actionTree();
+                    break;
+
+                case 'watch':
+                    $this->actionWatch();
+                    break;
+
+                case 'emptyTrash':
+                    $this->actionEmptyTrash();
+                    break;
+
+                case 'rename':
+                    $this->actionRename();
+                    break;
+
                 default:
                     $this->error('Invalid action', 400);
             }
@@ -1019,6 +1084,1079 @@ class ShipPHPServer
         $this->log("Deleted backup: {$backupId}");
 
         $this->success('Backup deleted successfully', ['id' => $backupId]);
+    }
+
+    // ============================================
+    // NEW FILE MANAGEMENT ACTIONS FOR WEB UI
+    // ============================================
+
+    /**
+     * Create directory on server
+     */
+    private function actionMkdir()
+    {
+        $path = $_POST['path'] ?? '';
+        $recursive = !empty($_POST['recursive']);
+
+        if (empty($path)) {
+            throw new Exception('Path is required');
+        }
+
+        $this->validatePath($path);
+
+        $fullPath = $this->baseDir . '/' . $path;
+
+        if (is_dir($fullPath)) {
+            $this->success('Directory already exists', ['path' => $path]);
+            return;
+        }
+
+        if (file_exists($fullPath)) {
+            throw new Exception('A file with this name already exists');
+        }
+
+        $mode = 0755;
+        if (!mkdir($fullPath, $mode, $recursive)) {
+            throw new Exception('Failed to create directory');
+        }
+
+        $this->log("Created directory: {$path}");
+
+        $this->success('Directory created', [
+            'path' => $path,
+            'mode' => decoct($mode)
+        ]);
+    }
+
+    /**
+     * Create empty file on server
+     */
+    private function actionTouch()
+    {
+        $path = $_POST['path'] ?? '';
+
+        if (empty($path)) {
+            throw new Exception('Path is required');
+        }
+
+        $this->validatePath($path);
+        $this->validateFileExtension($path);
+
+        $fullPath = $this->baseDir . '/' . $path;
+
+        // Create directory if needed
+        $dir = dirname($fullPath);
+        if (!is_dir($dir)) {
+            if (!mkdir($dir, 0755, true)) {
+                throw new Exception('Failed to create parent directory');
+            }
+        }
+
+        $exists = file_exists($fullPath);
+
+        if ($exists) {
+            // Update modification time
+            if (!touch($fullPath)) {
+                throw new Exception('Failed to update file timestamp');
+            }
+        } else {
+            // Create new empty file
+            if (file_put_contents($fullPath, '') === false) {
+                throw new Exception('Failed to create file');
+            }
+            chmod($fullPath, 0644);
+        }
+
+        $this->log("Touched file: {$path}");
+
+        $this->success($exists ? 'File timestamp updated' : 'File created', [
+            'path' => $path,
+            'created' => !$exists
+        ]);
+    }
+
+    /**
+     * Write content to file on server
+     */
+    private function actionWrite()
+    {
+        $path = $_POST['path'] ?? '';
+        $content = $_POST['content'] ?? '';
+        $encoding = $_POST['encoding'] ?? 'plain'; // plain or base64
+        $overwrite = !empty($_POST['overwrite']);
+
+        if (empty($path)) {
+            throw new Exception('Path is required');
+        }
+
+        $this->validatePath($path);
+        $this->validateFileExtension($path);
+
+        $fullPath = $this->baseDir . '/' . $path;
+
+        // Check if file exists and overwrite flag
+        if (file_exists($fullPath) && !$overwrite) {
+            throw new Exception('File already exists. Use overwrite flag to replace.');
+        }
+
+        // Decode content if base64
+        if ($encoding === 'base64') {
+            $content = base64_decode($content);
+            if ($content === false) {
+                throw new Exception('Invalid base64 content');
+            }
+        }
+
+        // Check content size
+        if (strlen($content) > MAX_FILE_SIZE) {
+            throw new Exception('Content too large');
+        }
+
+        // Create directory if needed
+        $dir = dirname($fullPath);
+        if (!is_dir($dir)) {
+            if (!mkdir($dir, 0755, true)) {
+                throw new Exception('Failed to create directory');
+            }
+        }
+
+        // Backup existing file if enabled
+        if (file_exists($fullPath) && ENABLE_BACKUPS) {
+            $this->backupFile($path);
+        }
+
+        if (file_put_contents($fullPath, $content) === false) {
+            throw new Exception('Failed to write file');
+        }
+
+        chmod($fullPath, 0644);
+
+        $this->log("Wrote file: {$path}");
+
+        $this->success('File written successfully', [
+            'path' => $path,
+            'size' => strlen($content),
+            'hash' => hash('sha256', $content)
+        ]);
+    }
+
+    /**
+     * Read file content from server
+     */
+    private function actionRead()
+    {
+        $path = $_POST['path'] ?? $_GET['path'] ?? '';
+        $lines = intval($_POST['lines'] ?? $_GET['lines'] ?? 0);
+        $offset = intval($_POST['offset'] ?? $_GET['offset'] ?? 0);
+
+        if (empty($path)) {
+            throw new Exception('Path is required');
+        }
+
+        $this->validatePath($path);
+
+        $fullPath = $this->baseDir . '/' . $path;
+
+        if (!file_exists($fullPath)) {
+            throw new Exception('File not found');
+        }
+
+        if (!is_file($fullPath)) {
+            throw new Exception('Path is not a file');
+        }
+
+        $fileSize = filesize($fullPath);
+
+        if ($fileSize > MAX_FILE_SIZE) {
+            throw new Exception('File too large to read: ' . $this->formatBytes($fileSize));
+        }
+
+        // Read file content
+        if ($lines > 0 || $offset > 0) {
+            // Read specific lines
+            $allLines = file($fullPath);
+            if ($allLines === false) {
+                throw new Exception('Failed to read file');
+            }
+
+            if ($offset > 0) {
+                $allLines = array_slice($allLines, $offset);
+            }
+
+            if ($lines > 0) {
+                $allLines = array_slice($allLines, 0, $lines);
+            }
+
+            $content = implode('', $allLines);
+            $totalLines = count(file($fullPath));
+        } else {
+            $content = file_get_contents($fullPath);
+            if ($content === false) {
+                throw new Exception('Failed to read file');
+            }
+            $totalLines = substr_count($content, "\n") + 1;
+        }
+
+        $this->success('File content retrieved', [
+            'path' => $path,
+            'content' => base64_encode($content),
+            'size' => $fileSize,
+            'lines' => $totalLines,
+            'hash' => hash_file('sha256', $fullPath),
+            'modified' => date('c', filemtime($fullPath)),
+            'mime' => mime_content_type($fullPath) ?: 'application/octet-stream'
+        ]);
+    }
+
+    /**
+     * Edit file content on server
+     */
+    private function actionEdit()
+    {
+        $path = $_POST['path'] ?? '';
+        $content = $_POST['content'] ?? null;
+        $encoding = $_POST['encoding'] ?? 'plain';
+        $append = !empty($_POST['append']);
+        $find = $_POST['find'] ?? null;
+        $replace = $_POST['replace'] ?? null;
+
+        if (empty($path)) {
+            throw new Exception('Path is required');
+        }
+
+        $this->validatePath($path);
+
+        $fullPath = $this->baseDir . '/' . $path;
+
+        if (!file_exists($fullPath)) {
+            throw new Exception('File not found');
+        }
+
+        if (!is_file($fullPath)) {
+            throw new Exception('Path is not a file');
+        }
+
+        // Backup before edit
+        if (ENABLE_BACKUPS) {
+            $this->backupFile($path);
+        }
+
+        // Find and replace mode
+        if ($find !== null && $replace !== null) {
+            $currentContent = file_get_contents($fullPath);
+            if ($currentContent === false) {
+                throw new Exception('Failed to read file');
+            }
+
+            $newContent = str_replace($find, $replace, $currentContent, $count);
+
+            if ($count === 0) {
+                $this->success('No matches found', ['path' => $path, 'replaced' => 0]);
+                return;
+            }
+
+            if (file_put_contents($fullPath, $newContent) === false) {
+                throw new Exception('Failed to write file');
+            }
+
+            $this->log("Edited file (find/replace): {$path}");
+
+            $this->success('File edited successfully', [
+                'path' => $path,
+                'replaced' => $count,
+                'size' => strlen($newContent),
+                'hash' => hash('sha256', $newContent)
+            ]);
+            return;
+        }
+
+        // Content mode (overwrite or append)
+        if ($content === null) {
+            throw new Exception('Content is required for edit');
+        }
+
+        // Decode if base64
+        if ($encoding === 'base64') {
+            $content = base64_decode($content);
+            if ($content === false) {
+                throw new Exception('Invalid base64 content');
+            }
+        }
+
+        if ($append) {
+            $result = file_put_contents($fullPath, $content, FILE_APPEND);
+        } else {
+            $result = file_put_contents($fullPath, $content);
+        }
+
+        if ($result === false) {
+            throw new Exception('Failed to edit file');
+        }
+
+        $this->log("Edited file: {$path}");
+
+        $this->success('File edited successfully', [
+            'path' => $path,
+            'mode' => $append ? 'append' : 'overwrite',
+            'size' => filesize($fullPath),
+            'hash' => hash_file('sha256', $fullPath)
+        ]);
+    }
+
+    /**
+     * Copy file or directory on server
+     */
+    private function actionCopy()
+    {
+        $source = $_POST['source'] ?? '';
+        $destination = $_POST['destination'] ?? '';
+        $overwrite = !empty($_POST['overwrite']);
+
+        if (empty($source) || empty($destination)) {
+            throw new Exception('Source and destination paths are required');
+        }
+
+        $this->validatePath($source);
+        $this->validatePath($destination);
+
+        $sourcePath = $this->baseDir . '/' . $source;
+        $destPath = $this->baseDir . '/' . $destination;
+
+        if (!file_exists($sourcePath)) {
+            throw new Exception('Source not found');
+        }
+
+        if (file_exists($destPath) && !$overwrite) {
+            throw new Exception('Destination already exists. Use overwrite flag to replace.');
+        }
+
+        // Create destination directory if needed
+        $destDir = dirname($destPath);
+        if (!is_dir($destDir)) {
+            if (!mkdir($destDir, 0755, true)) {
+                throw new Exception('Failed to create destination directory');
+            }
+        }
+
+        // Remove existing destination if overwrite
+        if (file_exists($destPath) && $overwrite) {
+            if (is_dir($destPath)) {
+                $this->deleteDirectory($destPath);
+            } else {
+                unlink($destPath);
+            }
+        }
+
+        // Copy
+        $this->copyPath($sourcePath, $destPath);
+
+        $this->log("Copied: {$source} -> {$destination}");
+
+        $this->success('Copy successful', [
+            'source' => $source,
+            'destination' => $destination
+        ]);
+    }
+
+    /**
+     * Change file permissions
+     */
+    private function actionChmod()
+    {
+        $path = $_POST['path'] ?? '';
+        $mode = $_POST['mode'] ?? '';
+        $recursive = !empty($_POST['recursive']);
+
+        if (empty($path) || empty($mode)) {
+            throw new Exception('Path and mode are required');
+        }
+
+        $this->validatePath($path);
+
+        $fullPath = $this->baseDir . '/' . $path;
+
+        if (!file_exists($fullPath)) {
+            throw new Exception('Path not found');
+        }
+
+        // Parse mode (accept both octal string like "755" and decimal)
+        if (is_string($mode) && strlen($mode) <= 4) {
+            $modeInt = octdec($mode);
+        } else {
+            $modeInt = intval($mode);
+        }
+
+        if ($modeInt < 0 || $modeInt > 0777) {
+            throw new Exception('Invalid permission mode');
+        }
+
+        $changed = 0;
+
+        if ($recursive && is_dir($fullPath)) {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($fullPath, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($iterator as $item) {
+                if (@chmod($item->getPathname(), $modeInt)) {
+                    $changed++;
+                }
+            }
+        }
+
+        if (!chmod($fullPath, $modeInt)) {
+            throw new Exception('Failed to change permissions');
+        }
+        $changed++;
+
+        $this->log("Changed permissions: {$path} -> " . decoct($modeInt));
+
+        $this->success('Permissions changed', [
+            'path' => $path,
+            'mode' => decoct($modeInt),
+            'changed' => $changed
+        ]);
+    }
+
+    /**
+     * Get file/directory information
+     */
+    private function actionFileInfo()
+    {
+        $path = $_POST['path'] ?? $_GET['path'] ?? '';
+
+        if (empty($path)) {
+            throw new Exception('Path is required');
+        }
+
+        $this->validatePath($path);
+
+        $fullPath = $this->baseDir . '/' . $path;
+
+        if (!file_exists($fullPath)) {
+            throw new Exception('Path not found');
+        }
+
+        $stat = stat($fullPath);
+        $isDir = is_dir($fullPath);
+
+        $info = [
+            'path' => $path,
+            'name' => basename($path),
+            'type' => $isDir ? 'directory' : 'file',
+            'size' => $isDir ? $this->getDirectorySize($fullPath) : filesize($fullPath),
+            'permissions' => decoct($stat['mode'] & 0777),
+            'owner' => $stat['uid'],
+            'group' => $stat['gid'],
+            'created' => date('c', $stat['ctime']),
+            'modified' => date('c', $stat['mtime']),
+            'accessed' => date('c', $stat['atime']),
+        ];
+
+        if (!$isDir) {
+            $info['mime'] = mime_content_type($fullPath) ?: 'application/octet-stream';
+            $info['hash'] = hash_file('sha256', $fullPath);
+            $info['extension'] = pathinfo($fullPath, PATHINFO_EXTENSION);
+        } else {
+            $items = array_diff(scandir($fullPath), ['.', '..']);
+            $info['items'] = count($items);
+        }
+
+        $this->success('File info retrieved', $info);
+    }
+
+    /**
+     * Search for files by name pattern
+     */
+    private function actionSearch()
+    {
+        $pattern = $_POST['pattern'] ?? $_GET['pattern'] ?? '';
+        $path = $_POST['path'] ?? $_GET['path'] ?? '';
+        $maxResults = intval($_POST['max'] ?? $_GET['max'] ?? 100);
+        $includeHidden = !empty($_POST['hidden'] ?? $_GET['hidden'] ?? false);
+
+        if (empty($pattern)) {
+            throw new Exception('Search pattern is required');
+        }
+
+        $searchDir = $this->baseDir;
+        if (!empty($path)) {
+            $this->validatePath($path);
+            $searchDir = $this->baseDir . '/' . $path;
+        }
+
+        if (!is_dir($searchDir)) {
+            throw new Exception('Search path is not a directory');
+        }
+
+        $results = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($searchDir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $file) {
+            if (count($results) >= $maxResults) {
+                break;
+            }
+
+            $name = $file->getFilename();
+
+            // Skip hidden files unless requested
+            if (!$includeHidden && strpos($name, '.') === 0) {
+                continue;
+            }
+
+            // Skip ShipPHP internal files
+            $relativePath = str_replace($this->baseDir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $relativePath = str_replace('\\', '/', $relativePath);
+
+            if (strpos($relativePath, '.shipphp') === 0 || strpos($relativePath, 'backup/') === 0) {
+                continue;
+            }
+
+            // Match pattern (supports wildcards)
+            if (fnmatch($pattern, $name, FNM_CASEFOLD)) {
+                $results[] = [
+                    'path' => $relativePath,
+                    'name' => $name,
+                    'type' => $file->isDir() ? 'directory' : 'file',
+                    'size' => $file->isFile() ? $file->getSize() : 0,
+                    'modified' => date('c', $file->getMTime())
+                ];
+            }
+        }
+
+        $this->success('Search complete', [
+            'pattern' => $pattern,
+            'results' => $results,
+            'count' => count($results),
+            'truncated' => count($results) >= $maxResults
+        ]);
+    }
+
+    /**
+     * Search file contents (grep)
+     */
+    private function actionGrep()
+    {
+        $text = $_POST['text'] ?? $_GET['text'] ?? '';
+        $path = $_POST['path'] ?? $_GET['path'] ?? '';
+        $pattern = $_POST['pattern'] ?? $_GET['pattern'] ?? '*';
+        $maxResults = intval($_POST['max'] ?? $_GET['max'] ?? 50);
+        $caseSensitive = !empty($_POST['case'] ?? $_GET['case'] ?? false);
+        $context = intval($_POST['context'] ?? $_GET['context'] ?? 0);
+
+        if (empty($text)) {
+            throw new Exception('Search text is required');
+        }
+
+        $searchDir = $this->baseDir;
+        if (!empty($path)) {
+            $this->validatePath($path);
+            $searchDir = $this->baseDir . '/' . $path;
+        }
+
+        if (!is_dir($searchDir)) {
+            throw new Exception('Search path is not a directory');
+        }
+
+        $results = [];
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($searchDir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::LEAVES_ONLY
+        );
+
+        foreach ($iterator as $file) {
+            if (count($results) >= $maxResults) {
+                break;
+            }
+
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            // Match file pattern
+            if ($pattern !== '*' && !fnmatch($pattern, $file->getFilename(), FNM_CASEFOLD)) {
+                continue;
+            }
+
+            // Skip binary files and large files
+            $size = $file->getSize();
+            if ($size > 5 * 1024 * 1024) { // 5MB limit for grep
+                continue;
+            }
+
+            // Skip ShipPHP internal files
+            $relativePath = str_replace($this->baseDir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $relativePath = str_replace('\\', '/', $relativePath);
+
+            if (strpos($relativePath, '.shipphp') === 0 || strpos($relativePath, 'backup/') === 0) {
+                continue;
+            }
+
+            $content = @file_get_contents($file->getPathname());
+            if ($content === false) {
+                continue;
+            }
+
+            // Skip binary content
+            if (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', substr($content, 0, 8192))) {
+                continue;
+            }
+
+            $lines = explode("\n", $content);
+            $matches = [];
+
+            foreach ($lines as $lineNum => $line) {
+                $found = $caseSensitive ?
+                    strpos($line, $text) !== false :
+                    stripos($line, $text) !== false;
+
+                if ($found) {
+                    $match = [
+                        'line' => $lineNum + 1,
+                        'content' => trim($line)
+                    ];
+
+                    // Add context lines if requested
+                    if ($context > 0) {
+                        $match['before'] = array_slice($lines, max(0, $lineNum - $context), $context);
+                        $match['after'] = array_slice($lines, $lineNum + 1, $context);
+                    }
+
+                    $matches[] = $match;
+                }
+            }
+
+            if (!empty($matches)) {
+                $results[] = [
+                    'path' => $relativePath,
+                    'matches' => $matches
+                ];
+            }
+        }
+
+        $this->success('Grep complete', [
+            'text' => $text,
+            'results' => $results,
+            'fileCount' => count($results),
+            'truncated' => count($results) >= $maxResults
+        ]);
+    }
+
+    /**
+     * Get server statistics
+     */
+    private function actionStats()
+    {
+        $diskFree = @disk_free_space($this->baseDir);
+        $diskTotal = @disk_total_space($this->baseDir);
+
+        // Count files and directories
+        $fileCount = 0;
+        $dirCount = 0;
+        $totalSize = 0;
+        $fileTypes = [];
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($this->baseDir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            $relativePath = str_replace($this->baseDir . DIRECTORY_SEPARATOR, '', $item->getPathname());
+            $relativePath = str_replace('\\', '/', $relativePath);
+
+            // Skip internal files
+            if (strpos($relativePath, '.shipphp') === 0 || strpos($relativePath, 'backup/') === 0) {
+                continue;
+            }
+
+            if ($item->isDir()) {
+                $dirCount++;
+            } else {
+                $fileCount++;
+                $totalSize += $item->getSize();
+
+                $ext = strtolower(pathinfo($item->getFilename(), PATHINFO_EXTENSION)) ?: 'no_ext';
+                if (!isset($fileTypes[$ext])) {
+                    $fileTypes[$ext] = ['count' => 0, 'size' => 0];
+                }
+                $fileTypes[$ext]['count']++;
+                $fileTypes[$ext]['size'] += $item->getSize();
+            }
+        }
+
+        // Sort file types by count
+        arsort($fileTypes);
+        $fileTypes = array_slice($fileTypes, 0, 10, true);
+
+        $this->success('Server statistics', [
+            'disk' => [
+                'free' => $diskFree,
+                'total' => $diskTotal,
+                'used' => $diskTotal - $diskFree,
+                'freeFormatted' => $this->formatBytes($diskFree),
+                'totalFormatted' => $this->formatBytes($diskTotal),
+                'usedPercent' => round((($diskTotal - $diskFree) / $diskTotal) * 100, 2)
+            ],
+            'files' => [
+                'count' => $fileCount,
+                'directories' => $dirCount,
+                'totalSize' => $totalSize,
+                'totalSizeFormatted' => $this->formatBytes($totalSize)
+            ],
+            'types' => $fileTypes,
+            'php' => [
+                'version' => PHP_VERSION,
+                'memory_limit' => ini_get('memory_limit'),
+                'max_upload' => ini_get('upload_max_filesize'),
+                'max_post' => ini_get('post_max_size'),
+                'max_execution' => ini_get('max_execution_time')
+            ],
+            'server' => [
+                'software' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
+                'protocol' => $_SERVER['SERVER_PROTOCOL'] ?? 'Unknown'
+            ]
+        ]);
+    }
+
+    /**
+     * Read server logs
+     */
+    private function actionLogs()
+    {
+        $lines = intval($_POST['lines'] ?? $_GET['lines'] ?? 100);
+        $filter = $_POST['filter'] ?? $_GET['filter'] ?? '';
+
+        if (!file_exists($this->logFile)) {
+            $this->success('No logs available', ['logs' => [], 'total' => 0]);
+            return;
+        }
+
+        $content = file_get_contents($this->logFile);
+        if ($content === false) {
+            throw new Exception('Failed to read log file');
+        }
+
+        $allLines = array_filter(explode("\n", $content));
+        $allLines = array_reverse($allLines); // Newest first
+
+        if (!empty($filter)) {
+            $allLines = array_filter($allLines, function($line) use ($filter) {
+                return stripos($line, $filter) !== false;
+            });
+        }
+
+        $allLines = array_slice($allLines, 0, $lines);
+
+        $this->success('Logs retrieved', [
+            'logs' => array_values($allLines),
+            'total' => count($allLines),
+            'filter' => $filter
+        ]);
+    }
+
+    /**
+     * Get directory tree structure
+     */
+    private function actionTree()
+    {
+        $path = $_POST['path'] ?? $_GET['path'] ?? '';
+        $depth = intval($_POST['depth'] ?? $_GET['depth'] ?? 3);
+        $showHidden = !empty($_POST['hidden'] ?? $_GET['hidden'] ?? false);
+        $showFiles = !($_POST['dirs_only'] ?? $_GET['dirs_only'] ?? false);
+
+        $searchDir = $this->baseDir;
+        if (!empty($path)) {
+            $this->validatePath($path);
+            $searchDir = $this->baseDir . '/' . $path;
+        }
+
+        if (!is_dir($searchDir)) {
+            throw new Exception('Path is not a directory');
+        }
+
+        $tree = $this->buildTree($searchDir, $depth, $showHidden, $showFiles);
+
+        $this->success('Directory tree', [
+            'path' => $path ?: '.',
+            'tree' => $tree
+        ]);
+    }
+
+    /**
+     * Build directory tree recursively
+     */
+    private function buildTree($dir, $depth, $showHidden, $showFiles, $currentDepth = 0)
+    {
+        if ($currentDepth >= $depth) {
+            return null;
+        }
+
+        $items = @scandir($dir);
+        if ($items === false) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            // Skip hidden files unless requested
+            if (!$showHidden && strpos($item, '.') === 0) {
+                continue;
+            }
+
+            $fullPath = $dir . '/' . $item;
+            $relativePath = str_replace($this->baseDir . '/', '', $fullPath);
+
+            // Skip ShipPHP internal directories
+            if (strpos($relativePath, '.shipphp') === 0 || $relativePath === 'backup') {
+                continue;
+            }
+
+            $isDir = is_dir($fullPath);
+
+            if (!$showFiles && !$isDir) {
+                continue;
+            }
+
+            $node = [
+                'name' => $item,
+                'path' => $relativePath,
+                'type' => $isDir ? 'directory' : 'file'
+            ];
+
+            if (!$isDir) {
+                $node['size'] = filesize($fullPath);
+                $node['modified'] = date('c', filemtime($fullPath));
+            } else {
+                $children = $this->buildTree($fullPath, $depth, $showHidden, $showFiles, $currentDepth + 1);
+                if ($children !== null) {
+                    $node['children'] = $children;
+                }
+            }
+
+            $result[] = $node;
+        }
+
+        // Sort: directories first, then files, both alphabetically
+        usort($result, function($a, $b) {
+            if ($a['type'] !== $b['type']) {
+                return $a['type'] === 'directory' ? -1 : 1;
+            }
+            return strcasecmp($a['name'], $b['name']);
+        });
+
+        return $result;
+    }
+
+    /**
+     * Watch for file changes (polling-based)
+     */
+    private function actionWatch()
+    {
+        $since = $_POST['since'] ?? $_GET['since'] ?? '';
+        $path = $_POST['path'] ?? $_GET['path'] ?? '';
+
+        $sinceTime = !empty($since) ? strtotime($since) : (time() - 60);
+
+        $searchDir = $this->baseDir;
+        if (!empty($path)) {
+            $this->validatePath($path);
+            $searchDir = $this->baseDir . '/' . $path;
+        }
+
+        if (!is_dir($searchDir)) {
+            throw new Exception('Path is not a directory');
+        }
+
+        $changes = [
+            'modified' => [],
+            'created' => [],
+            'deleted' => []
+        ];
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($searchDir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $file) {
+            $relativePath = str_replace($this->baseDir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $relativePath = str_replace('\\', '/', $relativePath);
+
+            // Skip internal files
+            if (strpos($relativePath, '.shipphp') === 0 || strpos($relativePath, 'backup/') === 0) {
+                continue;
+            }
+
+            $mtime = $file->getMTime();
+            $ctime = $file->getCTime();
+
+            if ($mtime > $sinceTime) {
+                if ($ctime > $sinceTime && $ctime === $mtime) {
+                    $changes['created'][] = [
+                        'path' => $relativePath,
+                        'type' => $file->isDir() ? 'directory' : 'file',
+                        'time' => date('c', $ctime)
+                    ];
+                } else {
+                    $changes['modified'][] = [
+                        'path' => $relativePath,
+                        'type' => $file->isDir() ? 'directory' : 'file',
+                        'time' => date('c', $mtime)
+                    ];
+                }
+            }
+        }
+
+        $this->success('Changes since ' . date('c', $sinceTime), [
+            'since' => date('c', $sinceTime),
+            'now' => date('c'),
+            'changes' => $changes,
+            'hasChanges' => !empty($changes['modified']) || !empty($changes['created'])
+        ]);
+    }
+
+    /**
+     * Empty trash
+     */
+    private function actionEmptyTrash()
+    {
+        if (!is_dir($this->trashDir)) {
+            $this->success('Trash is empty', ['deleted' => 0]);
+            return;
+        }
+
+        $index = $this->loadTrashIndex();
+        $deleted = 0;
+
+        foreach ($index as $item) {
+            $trashPath = $this->baseDir . '/' . ($item['trash_path'] ?? '');
+            $trashIdDir = dirname($trashPath);
+
+            if (file_exists($trashPath)) {
+                if (is_dir($trashPath)) {
+                    $this->deleteDirectory($trashPath);
+                } else {
+                    unlink($trashPath);
+                }
+                $deleted++;
+            }
+
+            // Clean up trash ID directory if empty
+            if (is_dir($trashIdDir) && count(scandir($trashIdDir)) === 2) {
+                rmdir($trashIdDir);
+            }
+        }
+
+        // Clear index
+        $this->saveTrashIndex([]);
+
+        $this->log("Emptied trash: {$deleted} items");
+
+        $this->success('Trash emptied', ['deleted' => $deleted]);
+    }
+
+    /**
+     * Rename files (batch rename with find/replace)
+     */
+    private function actionRename()
+    {
+        $path = $_POST['path'] ?? '';
+        $find = $_POST['find'] ?? '';
+        $replace = $_POST['replace'] ?? '';
+        $pattern = $_POST['pattern'] ?? '*';
+
+        if (empty($path)) {
+            throw new Exception('Path is required');
+        }
+
+        $this->validatePath($path);
+
+        $fullPath = $this->baseDir . '/' . $path;
+
+        if (!is_dir($fullPath)) {
+            // Single file rename
+            if (!file_exists($fullPath)) {
+                throw new Exception('File not found');
+            }
+
+            $newName = str_replace($find, $replace, basename($path));
+            $newPath = dirname($path) . '/' . $newName;
+
+            if ($newPath === $path) {
+                $this->success('No changes needed', ['renamed' => 0]);
+                return;
+            }
+
+            $this->validatePath($newPath);
+
+            if (file_exists($this->baseDir . '/' . $newPath)) {
+                throw new Exception('Destination already exists');
+            }
+
+            if (!rename($fullPath, $this->baseDir . '/' . $newPath)) {
+                throw new Exception('Rename failed');
+            }
+
+            $this->log("Renamed: {$path} -> {$newPath}");
+
+            $this->success('File renamed', [
+                'renamed' => 1,
+                'items' => [['from' => $path, 'to' => $newPath]]
+            ]);
+            return;
+        }
+
+        // Batch rename in directory
+        $items = scandir($fullPath);
+        $renamed = [];
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            // Match pattern
+            if ($pattern !== '*' && !fnmatch($pattern, $item, FNM_CASEFOLD)) {
+                continue;
+            }
+
+            // Check if find string exists in filename
+            if (strpos($item, $find) === false) {
+                continue;
+            }
+
+            $newName = str_replace($find, $replace, $item);
+            $oldPath = $fullPath . '/' . $item;
+            $newPathFull = $fullPath . '/' . $newName;
+
+            if (file_exists($newPathFull)) {
+                continue; // Skip if destination exists
+            }
+
+            if (rename($oldPath, $newPathFull)) {
+                $renamed[] = [
+                    'from' => $path . '/' . $item,
+                    'to' => $path . '/' . $newName
+                ];
+            }
+        }
+
+        $this->log("Batch renamed in {$path}: " . count($renamed) . " items");
+
+        $this->success('Rename complete', [
+            'renamed' => count($renamed),
+            'items' => $renamed
+        ]);
     }
 
     /**

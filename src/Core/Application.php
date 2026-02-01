@@ -27,6 +27,20 @@ use ShipPHP\Commands\TrashCommand;
 use ShipPHP\Commands\LockCommand;
 use ShipPHP\Commands\PlanCommand;
 use ShipPHP\Commands\ApplyCommand;
+// New commands for Web UI
+use ShipPHP\Commands\WebCommand;
+use ShipPHP\Commands\MkdirCommand;
+use ShipPHP\Commands\TouchCommand;
+use ShipPHP\Commands\WriteFileCommand;
+use ShipPHP\Commands\ReadFileCommand;
+use ShipPHP\Commands\SearchCommand;
+use ShipPHP\Commands\GrepCommand;
+use ShipPHP\Commands\InfoCommand;
+use ShipPHP\Commands\StatsCommand;
+use ShipPHP\Commands\CopyCommand;
+use ShipPHP\Commands\ChmodCommand;
+use ShipPHP\Commands\LogsCommand;
+use ShipPHP\Commands\WatchCommand;
 use ShipPHP\Helpers\Output;
 use ShipPHP\Core\VersionChecker;
 use ShipPHP\Core\ProjectPaths;
@@ -77,6 +91,20 @@ class Application
             'apply' => ApplyCommand::class,
             'extract' => ExtractCommand::class,
             'where' => WhereCommand::class,
+            // New commands for Web UI
+            'web' => WebCommand::class,
+            'mkdir' => MkdirCommand::class,
+            'touch' => TouchCommand::class,
+            'write' => WriteFileCommand::class,
+            'read' => ReadFileCommand::class,
+            'search' => SearchCommand::class,
+            'grep' => GrepCommand::class,
+            'info' => InfoCommand::class,
+            'stats' => StatsCommand::class,
+            'copy' => CopyCommand::class,
+            'chmod' => ChmodCommand::class,
+            'logs' => LogsCommand::class,
+            'watch' => WatchCommand::class,
         ];
     }
 
@@ -390,19 +418,38 @@ class Application
         $this->output->writeln("    token show                Show current authentication token");
         $this->output->writeln("    token rotate              Generate new token (requires server upload)");
         $this->output->writeln("");
-        $this->output->writeln($this->output->colorize("  Utilities:", 'yellow'));
-        $this->output->writeln("    health            Check server health and diagnostics");
-        $this->output->writeln("    diff [file]       Show differences for specific file");
+        $this->output->writeln($this->output->colorize("  File Management:", 'yellow'));
+        $this->output->writeln("    mkdir <path>      Create directory on server");
+        $this->output->writeln("    touch <path>      Create empty file on server");
+        $this->output->writeln("    write <path>      Write content to file on server");
+        $this->output->writeln("    read <path>       Read file content from server");
+        $this->output->writeln("    copy <src> --to   Copy file/directory on server");
+        $this->output->writeln("    chmod <path> 755  Change file permissions");
+        $this->output->writeln("    info <path>       Get file/directory details");
+        $this->output->writeln("    search <pattern>  Search for files by name");
+        $this->output->writeln("    grep <text>       Search file contents");
         $this->output->writeln("    tree [path]       Show server file tree");
-        $this->output->writeln("    delete <path>     Delete or trash a file or directory on the server");
+        $this->output->writeln("    delete <path>     Delete or trash files on server");
         $this->output->writeln("    trash [action]    List or restore trashed files");
-        $this->output->writeln("    move <path>       Move or copy files on the server");
-        $this->output->writeln("    rename <path>     Batch rename files on the server");
+        $this->output->writeln("    move <path>       Move or copy files on server");
+        $this->output->writeln("    rename <path>     Batch rename files on server");
+        $this->output->writeln("");
+        $this->output->writeln($this->output->colorize("  Server Utilities:", 'yellow'));
+        $this->output->writeln("    health            Check server health and diagnostics");
+        $this->output->writeln("    stats             Show server statistics");
+        $this->output->writeln("    logs              View server logs");
+        $this->output->writeln("    watch             Watch for file changes in realtime");
+        $this->output->writeln("    lock [on|off]     Toggle maintenance mode");
+        $this->output->writeln("    extract <zip>     Extract zip archive on server");
+        $this->output->writeln("    where             Show server base directory");
+        $this->output->writeln("    diff [file]       Show differences for specific file");
+        $this->output->writeln("");
+        $this->output->writeln($this->output->colorize("  Planning:", 'yellow'));
         $this->output->writeln("    plan [action]     View or clear queued operations");
         $this->output->writeln("    apply             Apply queued operations");
-        $this->output->writeln("    lock [on|off]     Toggle maintenance mode");
-        $this->output->writeln("    extract <zip>     Extract a zip archive on the server");
-        $this->output->writeln("    where             Show server base directory");
+        $this->output->writeln("");
+        $this->output->writeln($this->output->colorize("  Web UI:", 'yellow'));
+        $this->output->writeln("    web               Launch web UI server");
         $this->output->writeln("");
         $this->output->writeln($this->output->colorize("OPTIONS:", 'cyan'));
         $this->output->writeln("    --help, -h        Show help information");
