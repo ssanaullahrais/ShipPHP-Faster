@@ -83,7 +83,7 @@
             </div>
         </div>
 
-        <!-- Setup Page (No project initialized) -->
+        <!-- Setup Page (Project/Profile Selection) -->
         <div id="page-setup" class="page">
             <div class="min-h-screen flex items-center justify-center p-6">
                 <div class="w-full max-w-2xl">
@@ -91,8 +91,8 @@
                         <div class="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-200 mb-4">
                             <i data-lucide="ship" class="h-8 w-8"></i>
                         </div>
-                        <h1 class="text-3xl font-bold text-white">Welcome to ShipPHP</h1>
-                        <p class="text-slate-400 mt-2">Initialize a new project or connect to an existing profile</p>
+                        <h1 class="text-3xl font-bold text-white">Select Project</h1>
+                        <p class="text-slate-400 mt-2">Choose a project to work with or create a new one</p>
                     </div>
 
                     <!-- Setup Steps -->
@@ -300,6 +300,9 @@
                             </a>
                             <a href="#" onclick="App.navigate('logs')" data-nav="logs" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
                                 <span><i data-lucide="scroll-text" class="h-4 w-4 inline mr-2"></i>Logs</span>
+                            </a>
+                            <a href="#" onclick="App.navigate('api-test')" data-nav="api-test" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
+                                <span><i data-lucide="activity" class="h-4 w-4 inline mr-2"></i>API Test</span>
                             </a>
                         </nav>
                     </div>
@@ -777,6 +780,37 @@
                             <div id="logs-content" class="font-mono text-xs text-slate-300 max-h-96 overflow-y-auto bg-slate-950 rounded-lg p-4">
                                 <div class="text-center py-8 text-slate-400">
                                     <p>No logs available</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- API Test Page -->
+                    <div id="page-api-test" class="page space-y-6">
+                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
+                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <h2 class="text-2xl font-semibold text-white">API Endpoint Tests</h2>
+                                    <p class="text-sm text-slate-400">Test all available API endpoints to verify functionality.</p>
+                                </div>
+                                <button onclick="App.runAllApiTests()" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600">
+                                    <i data-lucide="play" class="h-4 w-4 inline mr-1"></i> Run All Tests
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold">Test Results</h3>
+                                <div id="api-test-summary" class="text-sm text-slate-400">
+                                    Click "Run All Tests" to begin
+                                </div>
+                            </div>
+                            <div id="api-test-results" class="space-y-3">
+                                <div class="text-center py-12 text-slate-400">
+                                    <i data-lucide="flask-conical" class="h-12 w-12 mx-auto mb-3 opacity-50"></i>
+                                    <p>No tests run yet</p>
+                                    <p class="text-xs mt-2">Click "Run All Tests" to check all API endpoints</p>
                                 </div>
                             </div>
                         </div>

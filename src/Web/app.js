@@ -22,24 +22,9 @@ const App = {
         // Initialize Lucide icons
         lucide.createIcons();
 
-        // Check if project is initialized
-        try {
-            const config = await this.api('GET', '/config');
-
-            if (config.success && config.data && config.data.initialized) {
-                // Project is initialized
-                this.isInitialized = true;
-                this.profileName = config.data.profileName || 'Connected';
-                this.showMainLayout();
-                await this.loadDashboard();
-            } else {
-                // Project not initialized - show setup wizard
-                this.showSetupPage();
-            }
-        } catch (error) {
-            console.error('Init error:', error);
-            this.showSetupPage();
-        }
+        // ALWAYS show profile/project selection first (like Netflix)
+        // This allows users to choose which project to work with
+        this.showSetupPage();
 
         // Hide splash screen
         setTimeout(() => {
@@ -76,11 +61,49 @@ const App = {
     /**
      * Show Setup Page
      */
-    showSetupPage() {
+    async showSetupPage() {
         document.getElementById('page-setup').classList.add('active');
         document.getElementById('main-layout').classList.add('hidden');
-        this.loadProfiles();
+
+        // Load profiles and automatically show profile list if any exist
+        await this.loadProfilesAndDecide();
         lucide.createIcons();
+    },
+
+    /**
+     * Load profiles and decide what to show
+     */
+    async loadProfilesAndDecide() {
+        const result = await this.api('GET', '/profiles');
+
+        if (result.success && result.data && result.data.profiles && Object.keys(result.data.profiles).length > 0) {
+            // Profiles exist - show them immediately (Netflix-style)
+            this.showProfileList();
+            this.loadProfiles();
+        } else {
+            // No profiles - show option selection
+            this.showOptions();
+        }
+    },
+
+    /**
+     * Show profile list directly
+     */
+    showProfileList() {
+        document.getElementById('setup-options').classList.add('hidden');
+        document.getElementById('setup-init-form').classList.add('hidden');
+        document.getElementById('setup-profile-select').classList.remove('hidden');
+        this.updateSetupStep(1);
+    },
+
+    /**
+     * Show options screen
+     */
+    showOptions() {
+        document.getElementById('setup-options').classList.remove('hidden');
+        document.getElementById('setup-init-form').classList.add('hidden');
+        document.getElementById('setup-profile-select').classList.add('hidden');
+        this.updateSetupStep(1);
     },
 
     /**
@@ -162,16 +185,25 @@ const App = {
 
             for (const [id, profile] of Object.entries(result.data.profiles)) {
                 const isDefault = result.data.default === id;
+                const projectName = this.escapeHtml(profile.projectName || id);
+                const domain = this.escapeHtml(profile.domain || profile.serverUrl || '');
+
                 container.innerHTML += `
-                    <button onclick="App.selectProfile('${id}')" class="w-full rounded-lg border border-slate-800 bg-slate-800/50 p-4 text-left hover:border-indigo-500/50 transition-colors">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h4 class="font-medium text-white">${profile.projectName || id}</h4>
-                                <p class="text-xs text-slate-400 mt-1">${profile.domain || profile.serverUrl}</p>
-                            </div>
-                            ${isDefault ? '<span class="rounded-full bg-indigo-500/20 px-2 py-1 text-xs text-indigo-200">Default</span>' : ''}
+                    <div class="rounded-lg border border-slate-800 bg-slate-800/50 p-4 hover:border-indigo-500/50 transition-colors">
+                        <div class="flex items-start justify-between gap-3">
+                            <button onclick="App.selectProfile('${id}')" class="flex-1 text-left">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-medium text-white">${projectName}</h4>
+                                    ${isDefault ? '<span class="rounded-full bg-indigo-500/20 px-2 py-0.5 text-xs text-indigo-200">Default</span>' : ''}
+                                </div>
+                                <p class="text-xs text-slate-400 mt-1">${domain}</p>
+                                <p class="text-xs text-slate-500 mt-1">Created: ${profile.created || 'Unknown'}</p>
+                            </button>
+                            <button onclick="App.deleteProfile('${id}', event)" class="rounded p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors" title="Delete profile">
+                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                            </button>
                         </div>
-                    </button>
+                    </div>
                 `;
             }
         } else {
@@ -258,6 +290,43 @@ const App = {
     },
 
     /**
+     * Delete Profile
+     */
+    async deleteProfile(profileId, event) {
+        // Prevent event bubbling to parent button
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+
+        // Confirm deletion
+        const confirmed = confirm('Are you sure you want to delete this profile?\n\nThis will only remove it from your global profiles list. It will not affect files on your server.');
+
+        if (!confirmed) {
+            return;
+        }
+
+        this.showGlobalProgress('Deleting profile...');
+
+        try {
+            const result = await this.api('DELETE', `/profiles/${profileId}`);
+
+            this.hideGlobalProgress();
+
+            if (result.success) {
+                this.toast('Deleted', 'Profile deleted successfully', 'success');
+                // Reload profiles
+                await this.loadProfilesAndDecide();
+            } else {
+                this.toast('Error', result.error || 'Failed to delete profile', 'error');
+            }
+        } catch (error) {
+            this.hideGlobalProgress();
+            this.toast('Error', 'Failed to delete profile: ' + error.message, 'error');
+        }
+    },
+
+    /**
      * Navigation
      */
     navigate(page) {
@@ -290,6 +359,7 @@ const App = {
             backups: 'Backups',
             trash: 'Trash',
             logs: 'Server Logs',
+            'api-test': 'API Tests',
             settings: 'Settings'
         };
         document.getElementById('header-title').textContent = titles[page] || 'Dashboard';
@@ -333,6 +403,9 @@ const App = {
                 break;
             case 'logs':
                 await this.refreshLogs();
+                break;
+            case 'api-test':
+                // Don't auto-run tests, wait for user to click button
                 break;
             case 'settings':
                 await this.loadSettings();
@@ -1563,6 +1636,119 @@ const App = {
             this.toast('Maintenance', `Maintenance mode ${mode}`, 'success');
         } else {
             this.toast('Error', result.error || 'Failed to toggle maintenance', 'error');
+        }
+    },
+
+    /**
+     * Run All API Tests
+     */
+    async runAllApiTests() {
+        const container = document.getElementById('api-test-results');
+        const summary = document.getElementById('api-test-summary');
+
+        container.innerHTML = '<div class="text-center py-8"><div class="spinner h-8 w-8 mx-auto border-3 border-slate-600 border-t-indigo-500 rounded-full"></div><p class="mt-4 text-slate-400">Running tests...</p></div>';
+        summary.textContent = 'Testing in progress...';
+
+        const tests = [
+            { name: 'Health Check', method: 'GET', endpoint: '/health', description: 'Server health status' },
+            { name: 'Config', method: 'GET', endpoint: '/config', description: 'Configuration info' },
+            { name: 'Profiles List', method: 'GET', endpoint: '/profiles', description: 'Global profiles' },
+            { name: 'Status', method: 'GET', endpoint: '/status', description: 'File changes' },
+            { name: 'Plans', method: 'GET', endpoint: '/plans', description: 'Queued operations' },
+            { name: 'Backups List', method: 'GET', endpoint: '/backups', description: 'Backup history' },
+            { name: 'Trash List', method: 'GET', endpoint: '/trash', description: 'Trashed items' },
+            { name: 'Server Info', method: 'GET', endpoint: '/server/info', description: 'Server details' },
+            { name: 'Server Stats', method: 'GET', endpoint: '/server/stats', description: 'Server statistics' },
+            { name: 'File Tree', method: 'GET', endpoint: '/files/tree', description: 'Directory structure' },
+        ];
+
+        const results = [];
+        let passed = 0;
+        let failed = 0;
+
+        for (const test of tests) {
+            try {
+                const startTime = Date.now();
+                const result = await this.api(test.method, test.endpoint);
+                const duration = Date.now() - startTime;
+
+                const success = result.success || result.data !== undefined;
+                if (success) passed++;
+                else failed++;
+
+                results.push({
+                    ...test,
+                    success,
+                    duration,
+                    response: result,
+                    error: result.error || null
+                });
+            } catch (error) {
+                failed++;
+                results.push({
+                    ...test,
+                    success: false,
+                    duration: 0,
+                    response: null,
+                    error: error.message
+                });
+            }
+        }
+
+        // Display results
+        summary.innerHTML = `
+            <span class="text-emerald-400">${passed} passed</span>
+            <span class="text-slate-500 mx-2">•</span>
+            <span class="text-rose-400">${failed} failed</span>
+            <span class="text-slate-500 mx-2">•</span>
+            <span class="text-slate-400">${tests.length} total</span>
+        `;
+
+        container.innerHTML = results.map((test, idx) => `
+            <div class="rounded-lg border ${test.success ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-rose-500/30 bg-rose-500/5'} p-4">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i data-lucide="${test.success ? 'check-circle' : 'x-circle'}" class="h-5 w-5 ${test.success ? 'text-emerald-400' : 'text-rose-400'}"></i>
+                            <div>
+                                <h4 class="font-medium text-white">${test.name}</h4>
+                                <p class="text-xs text-slate-400">${test.description}</p>
+                            </div>
+                        </div>
+                        <div class="pl-8 space-y-1 text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-500">Endpoint:</span>
+                                <code class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">${test.method} ${test.endpoint}</code>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-500">Duration:</span>
+                                <span class="text-slate-300">${test.duration}ms</span>
+                            </div>
+                            ${test.error ? `
+                                <div class="flex items-start gap-2 mt-2">
+                                    <span class="text-rose-400">Error:</span>
+                                    <span class="text-rose-300">${this.escapeHtml(test.error)}</span>
+                                </div>
+                            ` : ''}
+                            ${test.success && test.response ? `
+                                <details class="mt-2">
+                                    <summary class="cursor-pointer text-slate-400 hover:text-white">View Response</summary>
+                                    <pre class="mt-2 p-2 rounded bg-slate-950 text-xs overflow-x-auto">${JSON.stringify(test.response, null, 2)}</pre>
+                                </details>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        lucide.createIcons();
+
+        // Show toast with summary
+        if (failed === 0) {
+            this.toast('All Tests Passed', `${passed} endpoints working correctly`, 'success');
+        } else {
+            this.toast('Tests Complete', `${passed} passed, ${failed} failed`, 'warning');
         }
     },
 
