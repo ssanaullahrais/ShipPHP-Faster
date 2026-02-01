@@ -40,12 +40,18 @@ class WebCommand extends BaseCommand
         }
 
         // Check for web UI
+        $srcWebDir = dirname(__DIR__) . '/Web';
         $webDir = dirname(dirname(__DIR__)) . '/web';
         $docsDir = dirname(dirname(__DIR__)) . '/docs';
 
-        $publicDir = is_dir($webDir) ? $webDir : $docsDir;
-
-        if (!is_dir($publicDir)) {
+        // Prefer src/Web, then web/, then docs/
+        if (is_dir($srcWebDir) && file_exists($srcWebDir . '/index.html')) {
+            $publicDir = $srcWebDir;
+        } elseif (is_dir($webDir)) {
+            $publicDir = $webDir;
+        } elseif (is_dir($docsDir)) {
+            $publicDir = $docsDir;
+        } else {
             $this->output->warning("Web UI directory not found. Creating minimal setup...");
             $publicDir = $this->createMinimalWebDir();
         }

@@ -236,15 +236,28 @@ class ApiServer
         $serverFiles = $this->api->listFiles();
 
         // Compare
-        $changes = $this->state->compareWithServer($serverFiles);
+        $rawChanges = $this->state->compareWithServer($serverFiles);
+
+        // Format changes for UI (modified, new, deleted)
+        $changes = [
+            'modified' => $rawChanges['toUpload'] ?? [],
+            'new' => $rawChanges['new'] ?? [],
+            'deleted' => $rawChanges['toDelete'] ?? []
+        ];
+
+        // If compareWithServer returns toUpload, these are modified files
+        // If it returns toDownload, those are files that exist on server but not locally
+        if (isset($rawChanges['toDownload'])) {
+            $changes['serverOnly'] = $rawChanges['toDownload'];
+        }
 
         $this->response->success([
             'changes' => $changes,
             'summary' => [
-                'toUpload' => count($changes['toUpload'] ?? []),
-                'toDownload' => count($changes['toDownload'] ?? []),
-                'toDelete' => count($changes['toDelete'] ?? []),
-                'conflicts' => count($changes['conflicts'] ?? [])
+                'modified' => count($changes['modified']),
+                'new' => count($changes['new']),
+                'deleted' => count($changes['deleted']),
+                'total' => count($changes['modified']) + count($changes['new']) + count($changes['deleted'])
             ],
             'localFiles' => count($localFiles),
             'serverFiles' => count($serverFiles)
@@ -715,8 +728,44 @@ class ApiServer
         $this->initApi();
 
         switch ($action) {
+            case 'info':
+                // Get server info
+                try {
+                    $health = $this->api->getHealth();
+                    $env = $this->config->getCurrentEnv();
+
+                    // Get profile name if linked
+                    $profileName = 'Connected';
+                    $linkFile = ProjectPaths::linkFile();
+                    if (file_exists($linkFile)) {
+                        ProfileManager::init();
+                        $profileId = trim(file_get_contents($linkFile));
+                        $profile = ProfileManager::get($profileId);
+                        $profileName = $profile['projectName'] ?? $profileId;
+                    }
+
+                    $this->response->success([
+                        'phpVersion' => $health['phpVersion'] ?? PHP_VERSION,
+                        'server' => $health['server'] ?? 'Unknown',
+                        'basePath' => $health['basePath'] ?? $health['baseDir'] ?? '-',
+                        'version' => SHIPPHP_VERSION,
+                        'profile' => $profileName,
+                        'serverUrl' => $env['serverUrl'] ?? ''
+                    ], 'Server info retrieved');
+                } catch (\Exception $e) {
+                    $this->response->success([
+                        'phpVersion' => PHP_VERSION,
+                        'server' => 'Local',
+                        'basePath' => WORKING_DIR,
+                        'version' => SHIPPHP_VERSION,
+                        'profile' => 'Disconnected',
+                        'error' => $e->getMessage()
+                    ], 'Server info (local only)');
+                }
+                break;
+
             case 'lock':
-                $mode = $this->request->input('mode', 'status');
+                $mode = $this->request->input('mode', 'toggle');
                 $message = $this->request->input('message', '');
                 $result = $this->api->lock($mode, $message);
                 $this->response->success($result, 'Lock operation complete');
@@ -766,6 +815,161 @@ class ApiServer
     private function handleConfig($method, $action)
     {
         switch ($action) {
+            case 'init':
+                // Initialize new project
+                $projectName = $this->request->input('projectName', 'My Project');
+                $environment = $this->request->input('environment', 'production');
+                $serverUrl = $this->request->input('serverUrl');
+                $token = $this->request->input('token');
+
+                if (empty($serverUrl) || empty($token)) {
+                    $this->response->error('Server URL and Token are required', 400);
+                    return;
+                }
+
+                // Create config
+                $configData = [
+                    'version' => SHIPPHP_VERSION,
+                    'serverUrl' => $serverUrl,
+                    'token' => $token,
+                    'deleteOnPush' => false,
+                    'backup' => [
+                        'enabled' => true,
+                        'beforePush' => true,
+                        'beforePull' => false,
+                        'keepLast' => 10,
+                        'autoClean' => true
+                    ],
+                    'ignore' => ['.git', '.shipphp', 'node_modules', 'vendor', '*.log'],
+                    'security' => [
+                        'maxFileSize' => 104857600,
+                        'rateLimit' => 120,
+                        'enableLogging' => true,
+                        'ipWhitelist' => []
+                    ],
+                    'environments' => [
+                        $environment => [
+                            'serverUrl' => $serverUrl,
+                            'token' => $token
+                        ]
+                    ],
+                    'currentEnv' => $environment
+                ];
+
+                // Save config
+                $configPath = ProjectPaths::configFile();
+                $configDir = dirname($configPath);
+                if (!is_dir($configDir)) {
+                    mkdir($configDir, 0755, true);
+                }
+                file_put_contents($configPath, json_encode($configData, JSON_PRETTY_PRINT));
+
+                // Create state directory
+                $stateDir = ProjectPaths::stateDir();
+                if (!is_dir($stateDir)) {
+                    mkdir($stateDir, 0755, true);
+                }
+
+                // Test connection
+                try {
+                    $api = new ApiClient($serverUrl, $token);
+                    $info = $api->getHealth();
+                    $this->response->success([
+                        'initialized' => true,
+                        'projectName' => $projectName,
+                        'environment' => $environment,
+                        'serverInfo' => $info
+                    ], 'Project initialized successfully');
+                } catch (\Exception $e) {
+                    $this->response->success([
+                        'initialized' => true,
+                        'projectName' => $projectName,
+                        'environment' => $environment,
+                        'warning' => 'Could not connect to server: ' . $e->getMessage()
+                    ], 'Project initialized (server unreachable)');
+                }
+                break;
+
+            case 'login':
+                // Login to existing profile
+                $profileId = $this->request->input('profile');
+
+                if (empty($profileId)) {
+                    $this->response->error('Profile ID is required', 400);
+                    return;
+                }
+
+                ProfileManager::init();
+                $profile = ProfileManager::get($profileId);
+
+                if (!$profile) {
+                    $this->response->error('Profile not found', 404);
+                    return;
+                }
+
+                // Create config from profile
+                $configData = [
+                    'version' => SHIPPHP_VERSION,
+                    'serverUrl' => $profile['serverUrl'] ?? '',
+                    'token' => $profile['token'] ?? '',
+                    'deleteOnPush' => false,
+                    'backup' => [
+                        'enabled' => true,
+                        'beforePush' => true,
+                        'beforePull' => false,
+                        'keepLast' => 10,
+                        'autoClean' => true
+                    ],
+                    'ignore' => ['.git', '.shipphp', 'node_modules', 'vendor', '*.log'],
+                    'currentEnv' => 'production'
+                ];
+
+                // Save config
+                $configPath = ProjectPaths::configFile();
+                $configDir = dirname($configPath);
+                if (!is_dir($configDir)) {
+                    mkdir($configDir, 0755, true);
+                }
+                file_put_contents($configPath, json_encode($configData, JSON_PRETTY_PRINT));
+
+                // Create profile link
+                $linkFile = ProjectPaths::linkFile();
+                file_put_contents($linkFile, $profileId);
+
+                $this->response->success([
+                    'connected' => true,
+                    'profile' => $profileId,
+                    'projectName' => $profile['projectName'] ?? $profileId
+                ], 'Connected to profile');
+                break;
+
+            case 'disconnect':
+                // Disconnect project
+                $configPath = ProjectPaths::configFile();
+                $linkFile = ProjectPaths::linkFile();
+
+                if (file_exists($configPath)) {
+                    unlink($configPath);
+                }
+                if (file_exists($linkFile)) {
+                    unlink($linkFile);
+                }
+
+                $this->response->success(['disconnected' => true], 'Project disconnected');
+                break;
+
+            case 'rotate-token':
+                $this->initApi();
+                // Generate new token
+                $newToken = bin2hex(random_bytes(32));
+                $this->config->set('token', $newToken);
+                $this->config->save();
+                $this->response->success([
+                    'token' => $newToken,
+                    'message' => 'Token rotated. Update server file with new token.'
+                ], 'Token rotated');
+                break;
+
             case 'env':
                 $this->initApi();
                 if ($method === 'GET') {
@@ -806,7 +1010,26 @@ class ApiServer
                 break;
 
             default:
-                $this->response->error('Invalid config action', 400);
+                // Return current config
+                if ($method === 'GET') {
+                    try {
+                        $this->initApi();
+                        $env = $this->config->getCurrentEnv();
+                        $this->response->success([
+                            'serverUrl' => $env['serverUrl'] ?? '',
+                            'token' => $env['token'] ?? '',
+                            'version' => SHIPPHP_VERSION,
+                            'currentEnv' => $this->config->get('currentEnv', 'default')
+                        ], 'Config retrieved');
+                    } catch (\Exception $e) {
+                        $this->response->success([
+                            'initialized' => false,
+                            'version' => SHIPPHP_VERSION
+                        ], 'Project not initialized');
+                    }
+                } else {
+                    $this->response->error('Invalid config action', 400);
+                }
         }
     }
 }
