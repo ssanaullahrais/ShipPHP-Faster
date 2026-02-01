@@ -1,4 +1,4 @@
-﻿# ShipPHP Faster - The Easiest Way to Deploy Your PHP Website!
+# ShipPHP Faster - The Easiest Way to Deploy Your PHP Website!
 
 [![Latest Version](https://img.shields.io/packagist/v/shipphp/faster?style=flat-square)](https://packagist.org/packages/shipphp/faster)
 [![License](https://img.shields.io/github/license/ssanaullahrais/ShipPHP-Faster?style=flat-square)](https://github.com/ssanaullahrais/ShipPHP-Faster/blob/main/LICENSE)
@@ -6,238 +6,200 @@
 
 ![ShipPHP Faster Screenshot](images/screenshot.png)
 
-**The Easiest Way to Deploy Your PHP Website - Now with Global Installation & Profile Management!**
+**Professional PHP Deployment Tool with Web UI, Global Installation & Profile Management!**
 
-ShipPHP Faster is your all-in-one deployment toolkit for PHP websites designed to eliminate slow, risky manual uploads and messy FTP work forever. With a single command, you can push your latest changes to the server, pull updates down, check your deployment status, and instantly roll back or restore previous versions thanks to automatic version-tracked backups.
+ShipPHP Faster is your all-in-one deployment toolkit for PHP websites. With a single command, push changes to server, pull updates, check deployment status, and instantly roll back with automatic version-tracked backups.
 
-- **No technical knowledge required**
-- **Global installation** (use from anywhere!)
-- **Multi-project support** (manage unlimited websites)
-- **Automatic version-tracked backups** (never lose your work!)
-- **Lightning fast** (only uploads changed files)
-- **Works everywhere** (Shared hosting, VPS, any server with PHP)
-- **Beautiful CLI interface** (Claude Code-style status bar)
+- **Web UI Dashboard** - Full browser-based management interface
+- **Global installation** - Use from anywhere!
+- **Multi-project support** - Manage unlimited websites
+- **Automatic version-tracked backups** - Never lose your work!
+- **Lightning fast** - Only uploads changed files
+- **Works everywhere** - Shared hosting, VPS, any server with PHP
 
 ---
 
-## 📦 Installation
-
-### ⚡ Quick Install (Recommended)
-
-**One command, done in seconds:**
+## Installation
 
 ```bash
 composer global require shipphp/faster
 ```
 
-That's it! ShipPHP is now available globally. Use it from any project:
+That's it! ShipPHP is now available globally. **Requirements:** PHP 7.4+ and Composer
 
-```bash
-cd /path/to/your/project
-shipphp init
-```
-
-**How to uninstall/remove? Use this:**
+**Uninstall:**
 ```bash
 composer global remove shipphp/faster
 ```
 
-**Requirements:** PHP 7.4+ and Composer
 ---
 
-### Alternative Installation Methods
-
-<details>
-<summary><b>Option 1: Manual Download (No Composer)</b></summary>
-
-**Step 1: Download ShipPHP**
-
-**Option A: Clone from GitHub**
-```bash
-git clone https://github.com/ssanaullahrais/ShipPHP-Faster.git shipphp
-cd shipphp
-```
-
-**Option B: Download ZIP**
-1. Go to: https://github.com/ssanaullahrais/ShipPHP-Faster
-2. Click "Code" → "Download ZIP"
-3. Extract the ZIP file
-
-**Step 2: Install Globally (Automatic)**
-```bash
-php shipphp.php install --global
-```
-
-Now use `shipphp` command from anywhere!
-
-</details>
-
-<details>
-<summary><b>Option 2: Per-Project Installation</b></summary>
-
-### Local Installation (Per-Project)
-
-Put the `shipphp` folder in each project:
+## Quick Start
 
 ```bash
-# Your project structure
-my-website/
-├── shipphp/           ← Put ShipPHP folder here
-├── index.php          ← Your website files
-├── about.php
-└── ...
-```
-
-**Create a shortcut command:**
-```bash
-cd /path/to/my-website
-php shipphp/shipphp.php bootstrap ship
-
-# Now use shorter commands:
-php ship init
-php ship push
-php ship status
-```
-
-</details>
-
-**💡 Tip:** For the best experience, use the Composer global installation method!
-
----
-
-## 🎯 Quick Start (After Installation)
-
-### Step 1: Initialize Your Project
-
-```bash
-# If using global installation:
+# 1. Initialize your project
+cd /path/to/your/project
 shipphp init
-```
 
-**You'll be asked:**
-- **Project name:** (e.g., "My Blog", "Client Website")
-- **Domain:** Where your site runs (e.g., `myblog.com`)
-- **Max file size:** Upload limit (default: 100MB)
-- **IP whitelist:** Optional security (press Enter to skip)
-- **Rate limit:** API throttling (default: 120 req/min)
-- **Logging:** Enable request logs (recommended: Yes)
+# 2. Upload shipphp-server.php to your website via FTP/cPanel
 
-**What ShipPHP creates:**
-- `shipphp.json` - Your local configuration
-- `shipphp-server.php` - Upload this to your server
-- `.shipphp/` - State tracking directory
-- **Global profile** - Saved in `~/.shipphp/profiles.json`
-
-### Step 2: Upload Server File
-
-Upload `shipphp-server.php` to your website using FTP or cPanel:
-```
-https://yoursite.com/shipphp-server.php
-```
-
-### Step 3: Login & Deploy!
-
-```bash
-# Connect to your profile
-shipphp login
-
-# View changes
-shipphp status
-
-# Deploy!
-shipphp push
+# 3. Deploy!
+shipphp status    # Check what changed
+shipphp push      # Deploy to server
 ```
 
 ---
 
-## 🌟 What's New
+## All Commands
 
-### ✨ Features Overview
-
-#### Smart Quick Start Dashboard
-
-Just type `shipphp` to see a beautiful context-aware dashboard:
-
+### Web UI
 ```bash
-shipphp
-
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║            🚀 ShipPHP Faster v2.1.0                        ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
-
-STATUS
-  Installation:  ✓ Global
-  Current Dir:   ✓ Initialized
-
-QUICK START
-  Check changes:             shipphp status
-  Deploy to server:          shipphp push
-  Download from server:      shipphp pull
-  Create backup:             shipphp backup create
-
-COMMON COMMANDS
-  shipphp status              Check what changed
-  shipphp push                Deploy to server
-  shipphp backup create       Create backup
-  shipphp profile list        Manage profiles
-  shipphp health              Check server health
-
-NEED HELP?
-  Full command list:         shipphp help
-  Documentation:             https://github.com/ssanaullahrais/ShipPHP-Faster
+shipphp web                           # Launch Web UI at http://localhost:8080
+shipphp web --port=3000               # Custom port
+shipphp web --host=0.0.0.0            # Allow external access
+shipphp web --open                    # Open browser automatically
 ```
 
-#### Auto-Update Notifications
-
-ShipPHP automatically checks for new releases and notifies you when updates are available.
-
+### Setup & Configuration
 ```bash
-shipphp --version
-✓ ShipPHP Faster v2.1.0
+shipphp init                          # Initialize project in current directory
+shipphp login                         # Connect project to a global profile
+shipphp bootstrap ./ship              # Create bootstrap file for shorter commands
+shipphp env [name]                    # Switch between environments
 ```
 
-#### Git-like Status Command
-
-Clean, scannable output similar to `git status`:
-
+### Deployment
 ```bash
-shipphp status
-
-╔════════════════════════════════════════════════════════════╗
-║  ShipPHP Status                                           ║
-╚════════════════════════════════════════════════════════════╝
-
-On branch: production
-
-Changes to push (local → server):
-  M 3 modified
-    M index.php
-    M src/config.php
-    M assets/style.css
-  + 1 added
-    + new-feature.php
-
-Changes to pull (server → local):
-  ✓ No changes
-
-────────────────────────────────────────────────────────────
-Summary:
-  4 files to push
-  0 files to pull
-
-Next steps:
-  Run 'shipphp push' to deploy local changes
+shipphp                               # Smart dashboard (quick start guide)
+shipphp status                        # Show changes since last sync
+shipphp status --detailed             # Detailed status with diagnostics
+shipphp push [path]                   # Upload changed files to server
+shipphp pull [path]                   # Download changed files from server
+shipphp sync                          # Status + Push (with confirmation)
+shipphp push local.php --to=remote.php    # Push to specific server path
+shipphp pull remote.php --to=local.php    # Pull to specific local path
 ```
 
-Use `shipphp status --detailed` for full diagnostics!
+### File Management
+```bash
+shipphp mkdir <path>                  # Create directory on server
+shipphp touch <path>                  # Create empty file on server
+shipphp write <path> --content="..."  # Write content to file
+shipphp write <path> --from=local.txt # Write from local file
+shipphp read <path>                   # Read file content from server
+shipphp read <path> --save=local.txt  # Download to local file
+shipphp copy <src> --to=<dest>        # Copy file/directory on server
+shipphp chmod <path> 755              # Change file permissions
+shipphp chmod <path> 644 --recursive  # Recursive permissions
+shipphp info <path>                   # Get file/directory details
+shipphp search "*.php"                # Search files by name pattern
+shipphp search "config*" --path=src   # Search in specific directory
+shipphp grep "function"               # Search file contents
+shipphp grep "TODO" --pattern="*.php" # Search in specific file types
+```
 
----
+### Server Utilities
+```bash
+shipphp health                        # Check server health
+shipphp health --detailed             # Detailed health diagnostics
+shipphp stats                         # Show server statistics
+shipphp logs                          # View server logs
+shipphp logs --lines=100 --filter=error  # Filter logs
+shipphp watch                         # Watch for file changes (realtime)
+shipphp watch --interval=5            # Custom poll interval
+shipphp tree [path]                   # Show server file tree
+shipphp where                         # Show server base directory
+shipphp delete <path>                 # Delete/trash files on server
+shipphp delete <path> --pattern=*.log # Pattern-based deletion
+shipphp delete <path> --permanent     # Permanently delete (no trash)
+shipphp trash                         # List trashed items
+shipphp trash restore <id>            # Restore from trash
+shipphp move <path> --to=<dest>       # Move files on server
+shipphp rename <path> --find=X --replace=Y  # Batch rename files
+shipphp lock on --message="Maintenance"    # Enable maintenance mode
+shipphp lock off                      # Disable maintenance mode
+shipphp extract <zip>                 # Extract zip archive on server
+```
 
-### v2.0 - Global Installation & Profile Management
+### Backup Management
+```bash
+shipphp backup                        # List all local backups
+shipphp backup create                 # Create local backup (auto-versioned)
+shipphp backup create --server        # Create and upload to server
+shipphp backup restore <id>           # Restore from local backup
+shipphp backup restore <id> --server  # Download and restore from server
+shipphp backup restore-server <id>    # Restore server files from server backup
+shipphp backup sync <id>              # Upload specific backup to server
+shipphp backup sync --all             # Upload all local backups to server
+shipphp backup pull <id>              # Download specific backup from server
+shipphp backup pull --all             # Download all backups from server
+shipphp backup delete <id> --local    # Delete from local only
+shipphp backup delete <id> --server   # Delete from server only
+shipphp backup delete <id> --both     # Delete from both
+shipphp backup delete --all           # Delete all backups (with confirmation)
+shipphp backup stats                  # Show backup comparison table
+```
 
 ### Profile Management
+```bash
+shipphp profile list                  # List all global profiles
+shipphp profile add                   # Add new profile interactively
+shipphp profile show <name>           # Show profile details
+shipphp profile use <name>            # Set default profile
+shipphp profile remove <name>         # Remove profile
+shipphp server generate <name>        # Generate server file & create profile
+```
+
+### Security
+```bash
+shipphp token show                    # Show current authentication token
+shipphp token rotate                  # Generate new token (requires server upload)
+```
+
+### Operation Planning
+```bash
+shipphp delete <path> --plan          # Queue operation instead of executing
+shipphp plan                          # View queued operations
+shipphp plan clear                    # Clear queued operations
+shipphp apply                         # Execute all queued operations
+```
+
+### Utilities
+```bash
+shipphp help                          # Full command list
+shipphp --version                     # Check version (with update notifications)
+shipphp diff [file]                   # Show hash differences
+```
+
+---
+
+## Web UI Dashboard
+
+Launch a full-featured web dashboard to manage your deployments:
+
+```bash
+shipphp web
+```
+
+**Features:**
+- **Setup Wizard** - Initialize project or select profile (same workflow as CLI)
+- **Dashboard** - Overview stats, health status, server info
+- **Status** - File change tracking (modified/new/deleted)
+- **Push/Pull** - Deploy with progress indicators
+- **File Explorer** - Browse, create, search, delete files
+- **Backups** - Create, restore, delete backups
+- **Trash** - Restore or permanently delete items
+- **Plans** - View and execute queued operations
+- **Logs** - Server log viewer with filtering
+- **Settings** - Configuration and token management
+
+**Toast Notifications** - Success, error, warning, info messages
+**Progress Bars** - Real-time upload/download progress
+**Responsive Design** - Works on desktop and mobile
+
+---
+
+## Profile Management
 
 Manage multiple websites easily:
 
@@ -277,127 +239,13 @@ Select profile (1-2): 1
 ✓ Connected to: myblog-com-a3f9
 ```
 
-### Beautiful Status Bar
-
-Every command shows your connection status (like Claude Code!):
-
-```
-╔════════════════════════════════════════════════════════════════════════════╗
-║ 🚀 My Personal Blog  │  myblog.com  │  myblog-com-a3f9  │  ●abc...xyz  ║
-╚════════════════════════════════════════════════════════════════════════════╝
-```
-
-### Token Security Management
-
-```bash
-# Show current authentication token
-shipphp token show
-
-# Rotate to new token (security best practice)
-shipphp token rotate
-```
-
-### Server File Generation
-
-Generate server files without initializing a project:
-
-```bash
-# Perfect for freelancers managing multiple clients
-shipphp server generate client-staging
-
-# Creates:
-# - shipphp-server.php (ready to upload)
-# - Global profile (client-staging)
-```
-
 ---
 
-## 📚 All Commands
-
-### Setup & Configuration
-```bash
-shipphp init                    # Initialize project (creates profile automatically)
-shipphp login                   # Connect project to a global profile
-shipphp bootstrap [path]        # Create short command alias
-shipphp env [name]              # Switch environments (staging/production)
-```
-
-> **Config directory:** New installs place ShipPHP config and state inside `shipphp-config/` (including `shipphp.json`, `.ignore`, `.shipphp/`, and `shipphp-server.php`) to keep project roots clean. Legacy installs that already use root-level `shipphp.json` remain supported.
-
-### Deployment
-```bash
-shipphp                         # Smart dashboard (quick start guide)
-shipphp status                  # Git-like status (clean output)
-shipphp status --detailed       # Detailed status with diagnostics
-shipphp push [path]             # Upload changed files to server
-shipphp pull [path]             # Download changed files from server
-shipphp sync                    # Status + Push (with confirmation)
-shipphp push local.php --to=public/index.php   # Upload a file to a specific server path
-shipphp pull public/index.php --to=local.php   # Download a server file to a specific local path
-```
-
-### Utilities
-```bash
-shipphp tree [path]             # Display a tree of server files
-shipphp delete <path>           # Delete a file or directory on the server
-shipphp extract <file.zip>      # Extract a zip archive on the server
-shipphp extract <file.zip> --to=public/uploads  # Extract to a target directory
-shipphp where                   # Show server base directory
-```
-> Note: `extract` currently supports `.zip` archives (via PHP's ZipArchive).
-
-### Backup Management (Version-Tracked)
-```bash
-shipphp backup create                    # Create versioned local backup (v2.1.0, v2.0.1, etc.)
-shipphp backup create --server           # Create and upload to server
-shipphp backup restore <id>              # Restore from local backup
-shipphp backup restore <id> --server     # Download and restore from server
-shipphp backup sync <id>                 # Upload specific backup to server
-shipphp backup sync --all                # Upload all backups to server
-shipphp backup pull <id>                 # Download specific backup from server
-shipphp backup pull --all                # Download all backups from server
-shipphp backup delete <id> --local       # Delete from local only
-shipphp backup delete <id> --server      # Delete from server only
-shipphp backup delete <id> --both        # Delete from both
-shipphp backup stats                     # Show backup comparison table
-shipphp backup                           # List all backups
-```
-
-### Profile Management
-```bash
-shipphp profile list                     # List all global profiles
-shipphp profile add                      # Add new profile interactively
-shipphp profile show <name>              # Show profile details
-shipphp profile use <name>               # Set default profile
-shipphp profile remove <name>            # Remove profile
-shipphp server generate <name>           # Generate server file & create profile
-```
-
-### Security
-```bash
-shipphp token show                       # Show current authentication token
-shipphp token rotate                     # Generate new token (requires server upload)
-```
-
-### Utilities
-```bash
-shipphp help                             # Full command list
-shipphp --version                        # Check version (with update notifications)
-shipphp health                           # Check server health and diagnostics
-shipphp health --detailed                # Detailed health report
-shipphp diff [file]                      # Show differences for specific file
-```
-
----
-
-## 🎬 Real-World Workflows
+## Real-World Workflows
 
 ### Freelancer with Multiple Clients
 
 ```bash
-# Install globally (see installation section above)
-# After global installation is complete:
-
 # Client 1 - Setup
 shipphp server generate client1-prod
 # Upload shipphp-server.php to client1.com
@@ -418,8 +266,6 @@ shipphp push
 cd /var/www/client2
 shipphp login    # Select client2-staging
 shipphp push
-
-# Done! Easy switching between clients!
 ```
 
 ### Team with Shared Server
@@ -440,27 +286,9 @@ shipphp login    # Select company-prod
 shipphp push
 ```
 
-### Personal Projects
-
-```bash
-# Project 1
-cd /var/www/myblog
-shipphp init     # Auto-creates profile
-shipphp login
-shipphp push
-
-# Project 2
-cd /var/www/portfolio
-shipphp init     # Auto-creates another profile
-shipphp login
-shipphp push
-
-# Profiles saved globally - easy to switch!
-```
-
 ---
 
-## 🔒 Security Features
+## Security Features
 
 ### Token-Based Authentication
 - **64-character tokens** (256-bit security)
@@ -485,7 +313,7 @@ shipphp push
 
 ---
 
-## 💾 Automatic Backup System
+## Automatic Backup System
 
 ### Version-Tracked Backups
 
@@ -493,38 +321,26 @@ Every backup gets an automatic semantic version:
 
 ```bash
 shipphp backup create    # Creates: 2026-01-27-143022-v2.1.0
-shipphp backup create    # Creates: 2026-01-27-143155-v2.0.1
-shipphp backup create    # Creates: 2026-01-27-143301-v2.0.2
+shipphp backup create    # Creates: 2026-01-27-143155-v2.1.1
+shipphp backup create    # Creates: 2026-01-27-143301-v2.1.2
 ```
 
-### Backup Features
-- **Automatic versioning** (v2.1.0, v2.0.1, v2.0.2...)
+### Features
+- **Automatic versioning** (v2.1.0, v2.1.1, v2.1.2...)
 - **Version history tracking** (`.versions.json`)
 - **Local & server sync** (upload/download backups)
 - **Respects .gitignore** (only backs up relevant files)
 - **Manifest system** (JSON metadata with file hashes)
 - **Easy restore** (one command to rollback)
 
-### Backup Commands
-```bash
-shipphp backup                          # List all backups with versions
-shipphp backup create                   # Create local v1.0.x backup
-shipphp backup create --server          # Create and upload to server
-shipphp backup restore <id>             # Restore specific version
-shipphp backup sync --all               # Upload all to server
-shipphp backup stats                    # Compare local vs server backups
-```
-
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### shipphp.json (Local Project Config)
 ```json
 {
-  "version": "2.1.0",
-  "projectName": "My Blog",
-  "profileId": "myblog-com-a3f9",
+  "version": "2.3.0",
   "serverUrl": "https://myblog.com/shipphp-server.php",
   "token": "64-character-token-here",
   "backup": {
@@ -532,11 +348,7 @@ shipphp backup stats                    # Compare local vs server backups
     "beforePush": true,
     "keepLast": 10
   },
-  "ignore": [
-    ".git",
-    "node_modules",
-    "*.log"
-  ]
+  "ignore": [".git", "node_modules", "*.log"]
 }
 ```
 
@@ -548,8 +360,7 @@ shipphp backup stats                    # Compare local vs server backups
       "projectName": "My Blog",
       "domain": "myblog.com",
       "serverUrl": "https://myblog.com/shipphp-server.php",
-      "token": "64-character-token-here",
-      "created": "2026-01-27 10:30:00"
+      "token": "64-character-token-here"
     }
   },
   "default": "myblog-com-a3f9"
@@ -558,7 +369,7 @@ shipphp backup stats                    # Compare local vs server backups
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### "Connection failed"
 1. Upload `shipphp-server.php` to your website
@@ -587,106 +398,72 @@ shipphp token rotate    # Generate new token
 
 ---
 
-## 📖 Documentation
+## Why ShipPHP Faster?
 
-- **GitHub:** https://github.com/ssanaullahrais/ShipPHP-Faster
-- **Issues:** Report bugs or request features
-- **Wiki:** Detailed guides and tutorials
-
----
-
-## 🎉 Why ShipPHP Faster?
-
-### vs FTP
-- ✅ **Automatic change detection** (only uploads what changed)
-- ✅ **Version-tracked backups** (instant rollback)
-- ✅ **No accidental overwrites** (safe deployments)
-- ✅ **Beautiful CLI** (professional interface)
-
-### vs Git Deploy
-- ✅ **Works on shared hosting** (no SSH required)
-- ✅ **No server setup** (just upload one PHP file)
-- ✅ **Automatic backups** (built-in safety)
-- ✅ **Beginner-friendly** (no Git knowledge needed)
-
-### vs Other Tools
-- ✅ **Global installation** (manage unlimited projects)
-- ✅ **Profile system** (easy multi-project switching)
-- ✅ **Token security** (enterprise-grade protection)
-- ✅ **Version tracking** (semantic backup versioning)
+| Feature | ShipPHP | FTP | Git Deploy |
+|---------|---------|-----|------------|
+| **Web UI** | ✅ | ❌ | ❌ |
+| **Easy Setup** | ✅ | ✅ | ❌ |
+| **Shared Hosting** | ✅ | ✅ | ❌ |
+| **Change Detection** | ✅ | ❌ | ✅ |
+| **Automatic Backups** | ✅ | ❌ | ❌ |
+| **No SSH Required** | ✅ | ✅ | ❌ |
+| **Multi-Project** | ✅ | Manual | Manual |
+| **Profile System** | ✅ | ❌ | ❌ |
 
 ---
 
-## 💡 Tips & Best Practices
+## Tips & Best Practices
 
-1. **Always create backups** before major changes:
+1. **Use the Web UI** for visual management:
+   ```bash
+   shipphp web --open
+   ```
+
+2. **Always create backups** before major changes:
    ```bash
    shipphp backup create --server
    shipphp push
    ```
 
-2. **Use profiles** for multi-project management:
+3. **Use profiles** for multi-project management:
    ```bash
-   shipphp profile list    # See all projects
-   shipphp login           # Switch projects
+   shipphp profile list
+   shipphp login
    ```
 
-3. **Rotate tokens regularly** (security best practice):
+4. **Rotate tokens regularly** (security best practice):
    ```bash
    shipphp token rotate
-   # Upload new shipphp-server.php!
    ```
 
-4. **Test with dry-run** before deploying:
+5. **Test with dry-run** before deploying:
    ```bash
    shipphp push --dry-run
    ```
 
-5. **Check status first**:
-   ```bash
-   shipphp status          # Clean git-like status
-   shipphp push            # Deploy changes
-   ```
-
 6. **Stay updated**:
    ```bash
-   shipphp --version       # Check for updates
    composer global update shipphp/faster
    ```
 
 ---
 
-## 🚀 Get Started Now!
+## Documentation
 
-```bash
-# 1. Download ShipPHP
-git clone https://github.com/ssanaullahrais/ShipPHP-Faster.git shipphp
-
-# 2. Put in your project OR install globally (see Installation section)
-cd /path/to/your/website
-
-# 3. Initialize
-php shipphp/shipphp.php init
-
-# 4. Upload shipphp-server.php to your server
-
-# 5. Deploy!
-php shipphp/shipphp.php login
-php shipphp/shipphp.php push
-```
-
-**Welcome to professional PHP deployment!** 🎉
+- **GitHub:** https://github.com/ssanaullahrais/ShipPHP-Faster
+- **Issues:** Report bugs or request features
 
 ---
 
-## 📄 License
+## License
 
 MIT License - Free to use for personal and commercial projects!
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please open an issue or pull request on GitHub.
 
-## ⭐ Support
+## Support
 
 If ShipPHP Faster helps you, please star the repository on GitHub!
