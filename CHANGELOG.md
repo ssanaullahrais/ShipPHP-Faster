@@ -5,6 +5,103 @@ All notable changes to ShipPHP Faster will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-02-02
+
+### 🐛 Critical Fixes
+- **Fixed ArgumentCountError in API** - Resolved fatal error where `State::scanLocalFiles()` was called without required parameters in `handleStatus()`, `handlePush()`, and `handlePull()` methods
+- **Fixed initialization workflow** - Web UI now properly checks if project is initialized before showing dashboard vs setup wizard
+- **Fixed health endpoint** - `handleHealth()` now works without requiring config initialization, returns proper status (not_initialized/connected/disconnected)
+- **Fixed config endpoint** - Enhanced to properly check initialization status without requiring API connection
+
+### ✨ Added
+- **Netflix-Style Profile Selection** - Web UI always shows profile/project selection on launch (just like Netflix profiles)
+  - Automatically displays profile list if global profiles exist
+  - Shows "Create New Project" option if no profiles found
+  - Users select which project to work with before accessing dashboard
+  - Clear visual hierarchy with profile cards showing name, domain, and creation date
+  - Default profile is clearly marked with badge
+
+- **API Testing Page** - Comprehensive endpoint testing tool for debugging
+  - Tests 10 core API endpoints: health, config, profiles, status, plans, backups, trash, server info, stats, file tree
+  - Visual pass/fail indicators (green checkmarks, red X marks)
+  - Response time metrics for each endpoint (milliseconds)
+  - Expandable JSON response viewer for debugging
+  - Summary statistics (X passed • Y failed • Z total)
+  - One-click "Run All Tests" button
+  - Perfect for verifying setup and troubleshooting issues
+
+- **Profile Deletion in Web UI** - Manage profiles directly from browser
+  - Delete button (trash icon) on each profile card
+  - Confirmation dialog prevents accidental deletion
+  - Safe operation - only removes from global list, doesn't touch server files
+  - Auto-refresh profile list after deletion
+  - Graceful handling when last profile is deleted
+
+- **Token Generation Helper** - Built-in secure token generator
+  - "Generate" button creates cryptographically secure 64-character tokens
+  - Uses `crypto.getRandomValues()` for true randomness
+  - Helpful reminder to update server file after generation
+  - No need to use external tools or CLI for token generation
+
+### 🎨 UI/UX Improvements
+- **Enhanced setup wizard** with step-by-step instructions
+  - Clear guide for generating and uploading server file
+  - Contextual help text for each input field
+  - Visual info boxes with actionable steps
+  - Better form validation with required field indicators
+
+- **Improved profile selection screen**
+  - Profile cards show creation date and full domain
+  - Better "no profiles" state with helpful guidance
+  - "Create New Instead" button for easy navigation
+  - Explanation of what profiles are and how to create them
+
+- **Better error handling** throughout Web UI
+  - All API calls wrapped in try-catch with user-friendly fallbacks
+  - `loadStats()` gracefully handles failures
+  - `loadRecentChanges()` shows appropriate error states
+  - `loadHealth()` properly handles all 3 status types
+  - Clear error messages that guide users to solutions
+
+- **Clearer instructions** in initialization form
+  - Step-by-step setup instructions in highlighted info box
+  - Descriptive labels with contextual hints
+  - Better placeholders for all input fields
+  - Enhanced visual hierarchy with better typography
+
+### 🔧 API Enhancements
+- `GET /api/config` - Now returns detailed initialization status without requiring API connection
+  - Returns `initialized: true/false` flag
+  - Includes `hasProfiles` to show if global profiles exist
+  - Shows `profileName` when connected to a profile
+  - No longer throws exceptions when project isn't set up
+
+- `GET /api/health` - Improved to work without config file
+  - Returns `status: not_initialized|connected|disconnected`
+  - Includes version information in all states
+  - Proper error messages for each failure mode
+  - No longer requires successful API client initialization
+
+- `DELETE /api/profiles/{id}` - Delete profile from global storage (already existed, now used by Web UI)
+
+### 🛠️ Improved
+- **Web UI initialization flow** - Now matches CLI behavior exactly
+  1. Launch → Always show profile/project selection
+  2. User selects profile or creates new → Connect to that project
+  3. Dashboard loads with data for selected project
+  4. Can switch projects by disconnecting
+
+- **Error messages** - More actionable and user-friendly throughout
+- **Loading states** - Better visual feedback during async operations
+- **Event handling** - Prevented event bubbling on delete buttons
+- **Toast notifications** - Added for all profile operations
+
+### 📚 Documentation
+- Updated CLAUDE.md with new workflow and features
+- All project instructions now reflect Netflix-style profile selection
+- Added API testing documentation
+- Clarified initialization workflow
+
 ## [2.3.0] - 2026-02-01
 
 ### ✨ Added
