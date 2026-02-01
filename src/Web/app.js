@@ -24,15 +24,20 @@ const App = {
 
         // Check if project is initialized
         try {
-            const health = await this.api('GET', '/health');
-            if (health.success) {
+            const config = await this.api('GET', '/config');
+
+            if (config.success && config.data && config.data.initialized) {
+                // Project is initialized
                 this.isInitialized = true;
+                this.profileName = config.data.profileName || 'Connected';
                 this.showMainLayout();
                 await this.loadDashboard();
             } else {
+                // Project not initialized - show setup wizard
                 this.showSetupPage();
             }
         } catch (error) {
+            console.error('Init error:', error);
             this.showSetupPage();
         }
 
@@ -238,6 +243,21 @@ const App = {
     },
 
     /**
+     * Generate Random Token
+     */
+    generateToken() {
+        // Generate a 64-character hexadecimal token (32 bytes)
+        const array = new Uint8Array(32);
+        crypto.getRandomValues(array);
+        const token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+
+        const tokenInput = document.getElementById('init-token');
+        tokenInput.value = token;
+
+        this.toast('Generated', 'New token generated. Remember to update your server file!', 'info');
+    },
+
+    /**
      * Navigation
      */
     navigate(page) {
@@ -344,21 +364,41 @@ const App = {
         const container = document.getElementById('health-status');
         try {
             const result = await this.api('GET', '/health');
-            if (result.success) {
-                container.innerHTML = `
-                    <div class="flex items-center justify-center gap-2 text-emerald-200">
-                        <i data-lucide="check-circle" class="h-6 w-6"></i>
-                        <span class="font-medium">Healthy</span>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-2">Server responding normally</p>
-                `;
+            if (result.success && result.data) {
+                const status = result.data.status;
+
+                if (status === 'connected') {
+                    container.innerHTML = `
+                        <div class="flex items-center justify-center gap-2 text-emerald-200">
+                            <i data-lucide="check-circle" class="h-6 w-6"></i>
+                            <span class="font-medium">Connected</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2">Server responding normally</p>
+                    `;
+                } else if (status === 'disconnected') {
+                    container.innerHTML = `
+                        <div class="flex items-center justify-center gap-2 text-amber-200">
+                            <i data-lucide="alert-circle" class="h-6 w-6"></i>
+                            <span class="font-medium">Disconnected</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2">${result.data.error || 'Cannot reach server'}</p>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="flex items-center justify-center gap-2 text-rose-200">
+                            <i data-lucide="wifi-off" class="h-6 w-6"></i>
+                            <span class="font-medium">Not Initialized</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2">Please complete setup</p>
+                    `;
+                }
             } else {
                 container.innerHTML = `
                     <div class="flex items-center justify-center gap-2 text-rose-200">
                         <i data-lucide="alert-circle" class="h-6 w-6"></i>
-                        <span class="font-medium">Offline</span>
+                        <span class="font-medium">Error</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-2">${result.error || 'Cannot connect'}</p>
+                    <p class="text-xs text-slate-400 mt-2">${result.error || 'Unknown error'}</p>
                 `;
             }
         } catch (e) {
@@ -367,6 +407,7 @@ const App = {
                     <i data-lucide="wifi-off" class="h-6 w-6"></i>
                     <span class="font-medium">Error</span>
                 </div>
+                <p class="text-xs text-slate-400 mt-2">Connection failed</p>
             `;
         }
         lucide.createIcons();
@@ -396,34 +437,43 @@ const App = {
      * Load Stats
      */
     async loadStats() {
-        // Get status count
-        const statusResult = await this.api('GET', '/status');
-        let changesCount = 0;
-        if (statusResult.success && statusResult.data) {
-            const changes = statusResult.data.changes || {};
-            changesCount = (changes.modified?.length || 0) + (changes.new?.length || 0) + (changes.deleted?.length || 0);
+        try {
+            // Get status count
+            const statusResult = await this.api('GET', '/status');
+            let changesCount = 0;
+            if (statusResult.success && statusResult.data) {
+                const changes = statusResult.data.changes || {};
+                changesCount = (changes.modified?.length || 0) + (changes.new?.length || 0) + (changes.deleted?.length || 0);
+            }
+            document.getElementById('stat-changes').textContent = changesCount;
+
+            // Get plans count
+            const plansResult = await this.api('GET', '/plans');
+            const plansCount = plansResult.success && plansResult.data ? (plansResult.data.operations?.length || 0) : 0;
+            document.getElementById('stat-plans').textContent = plansCount;
+
+            // Get backups count
+            const backupsResult = await this.api('GET', '/backups');
+            const backupsCount = backupsResult.success && backupsResult.data ? (backupsResult.data.backups?.length || 0) : 0;
+            document.getElementById('stat-backups').textContent = backupsCount;
+
+            // Get trash count
+            const trashResult = await this.api('GET', '/trash');
+            const trashCount = trashResult.success && trashResult.data ? (trashResult.data.items?.length || 0) : 0;
+            document.getElementById('stat-trash').textContent = trashCount;
+
+            // Update badges
+            this.updateBadge('status-badge', changesCount);
+            this.updateBadge('plans-badge', plansCount);
+            this.updateBadge('trash-badge', trashCount);
+        } catch (e) {
+            console.error('Failed to load stats:', e);
+            // Set default values on error
+            document.getElementById('stat-changes').textContent = '-';
+            document.getElementById('stat-plans').textContent = '-';
+            document.getElementById('stat-backups').textContent = '-';
+            document.getElementById('stat-trash').textContent = '-';
         }
-        document.getElementById('stat-changes').textContent = changesCount;
-
-        // Get plans count
-        const plansResult = await this.api('GET', '/plans');
-        const plansCount = plansResult.success && plansResult.data ? (plansResult.data.operations?.length || 0) : 0;
-        document.getElementById('stat-plans').textContent = plansCount;
-
-        // Get backups count
-        const backupsResult = await this.api('GET', '/backups');
-        const backupsCount = backupsResult.success && backupsResult.data ? (backupsResult.data.backups?.length || 0) : 0;
-        document.getElementById('stat-backups').textContent = backupsCount;
-
-        // Get trash count
-        const trashResult = await this.api('GET', '/trash');
-        const trashCount = trashResult.success && trashResult.data ? (trashResult.data.items?.length || 0) : 0;
-        document.getElementById('stat-trash').textContent = trashCount;
-
-        // Update badges
-        this.updateBadge('status-badge', changesCount);
-        this.updateBadge('plans-badge', plansCount);
-        this.updateBadge('trash-badge', trashCount);
     },
 
     /**
@@ -444,33 +494,50 @@ const App = {
      */
     async loadRecentChanges() {
         const container = document.getElementById('recent-changes');
-        const result = await this.api('GET', '/status');
+        try {
+            const result = await this.api('GET', '/status');
 
-        if (result.success && result.data && result.data.changes) {
-            const changes = result.data.changes;
-            const allChanges = [
-                ...(changes.modified || []).map(f => ({ file: f, type: 'modified' })),
-                ...(changes.new || []).map(f => ({ file: f, type: 'new' })),
-                ...(changes.deleted || []).map(f => ({ file: f, type: 'deleted' }))
-            ].slice(0, 5);
+            if (result.success && result.data && result.data.changes) {
+                const changes = result.data.changes;
+                const allChanges = [
+                    ...(changes.modified || []).map(f => ({ file: f, type: 'modified' })),
+                    ...(changes.new || []).map(f => ({ file: f, type: 'new' })),
+                    ...(changes.deleted || []).map(f => ({ file: f, type: 'deleted' }))
+                ].slice(0, 5);
 
-            if (allChanges.length > 0) {
-                container.innerHTML = allChanges.map(change => `
-                    <div class="rounded-lg border border-slate-800 bg-slate-800/50 p-3">
-                        <div class="flex items-center justify-between">
-                            <span class="truncate">${change.file}</span>
-                            <span class="text-xs ${this.getChangeTypeColor(change.type)}">${change.type}</span>
+                if (allChanges.length > 0) {
+                    container.innerHTML = allChanges.map(change => `
+                        <div class="rounded-lg border border-slate-800 bg-slate-800/50 p-3">
+                            <div class="flex items-center justify-between">
+                                <span class="truncate">${change.file}</span>
+                                <span class="text-xs ${this.getChangeTypeColor(change.type)}">${change.type}</span>
+                            </div>
                         </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-slate-400">
+                            <i data-lucide="check-circle" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
+                            <p>No pending changes</p>
+                        </div>
+                    `;
+                }
             } else {
                 container.innerHTML = `
                     <div class="text-center py-8 text-slate-400">
-                        <i data-lucide="check-circle" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
-                        <p>No pending changes</p>
+                        <i data-lucide="alert-circle" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
+                        <p>Unable to load changes</p>
                     </div>
                 `;
             }
+        } catch (e) {
+            console.error('Failed to load recent changes:', e);
+            container.innerHTML = `
+                <div class="text-center py-8 text-slate-400">
+                    <i data-lucide="wifi-off" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
+                    <p>Connection error</p>
+                </div>
+            `;
         }
         lucide.createIcons();
     },

@@ -137,11 +137,29 @@
 
                     <!-- Init Form -->
                     <div id="setup-init-form" class="hidden rounded-xl border border-slate-800 bg-slate-900/60 p-6">
-                        <h3 class="text-xl font-semibold text-white mb-4">Initialize New Project</h3>
+                        <h3 class="text-xl font-semibold text-white mb-2">Initialize New Project</h3>
+                        <p class="text-sm text-slate-400 mb-6">Set up ShipPHP to deploy your local files to a remote server.</p>
+
+                        <!-- Step-by-step instructions -->
+                        <div class="rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-4 mb-6">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="info" class="h-5 w-5 text-indigo-200 flex-shrink-0 mt-0.5"></i>
+                                <div class="text-sm text-indigo-100">
+                                    <p class="font-medium mb-2">Setup Instructions:</p>
+                                    <ol class="space-y-1 text-indigo-200/90 list-decimal list-inside">
+                                        <li>Generate <code class="bg-slate-900/50 px-1.5 py-0.5 rounded text-xs">shipphp-server.php</code> using CLI: <code class="bg-slate-900/50 px-1.5 py-0.5 rounded text-xs">shipphp server generate</code></li>
+                                        <li>Upload the generated file to your web server</li>
+                                        <li>Copy the server URL and authentication token from the file</li>
+                                        <li>Enter the details below to complete setup</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Project Name</label>
-                                <input type="text" id="init-project-name" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none" placeholder="My Project">
+                                <input type="text" id="init-project-name" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none" placeholder="My Website">
                             </div>
                             <div>
                                 <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Environment</label>
@@ -152,37 +170,64 @@
                                 </select>
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Server URL</label>
-                                <input type="url" id="init-server-url" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none" placeholder="https://example.com/shipphp-server.php">
+                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">
+                                    Server URL
+                                    <span class="text-slate-500 normal-case tracking-normal font-normal ml-1">(where you uploaded shipphp-server.php)</span>
+                                </label>
+                                <input type="url" id="init-server-url" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none" placeholder="https://example.com/shipphp-server.php" required>
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Authentication Token</label>
-                                <input type="text" id="init-token" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-mono focus:border-indigo-500 focus:outline-none" placeholder="64-character token from shipphp-server.php">
+                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">
+                                    Authentication Token
+                                    <span class="text-slate-500 normal-case tracking-normal font-normal ml-1">(64-character token from shipphp-server.php)</span>
+                                </label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="init-token" class="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-mono focus:border-indigo-500 focus:outline-none" placeholder="64-character hexadecimal token" required>
+                                    <button onclick="App.generateToken()" type="button" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 whitespace-nowrap">
+                                        <i data-lucide="key" class="h-4 w-4 inline mr-1"></i> Generate
+                                    </button>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-1">Or click Generate to create a new token (remember to update your server file)</p>
                             </div>
                         </div>
                         <div class="flex items-center justify-between mt-6">
-                            <button onclick="App.backToOptions()" class="text-sm text-slate-400 hover:text-white">
+                            <button onclick="App.backToOptions()" type="button" class="text-sm text-slate-400 hover:text-white">
                                 <i data-lucide="arrow-left" class="h-4 w-4 inline mr-1"></i> Back
                             </button>
-                            <button onclick="App.initProject()" class="rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 transition-colors">
-                                Initialize & Connect
+                            <button onclick="App.initProject()" type="button" class="rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 transition-colors">
+                                <i data-lucide="check" class="h-4 w-4 inline mr-1"></i> Initialize & Connect
                             </button>
                         </div>
                     </div>
 
                     <!-- Profile Selection -->
                     <div id="setup-profile-select" class="hidden rounded-xl border border-slate-800 bg-slate-900/60 p-6">
-                        <h3 class="text-xl font-semibold text-white mb-4">Select Profile</h3>
-                        <div id="profile-list" class="space-y-3 max-h-64 overflow-y-auto">
+                        <h3 class="text-xl font-semibold text-white mb-2">Select Profile</h3>
+                        <p class="text-sm text-slate-400 mb-6">Connect to an existing ShipPHP profile from your global configuration.</p>
+
+                        <div id="profile-list" class="space-y-3 max-h-64 overflow-y-auto mb-4">
                             <!-- Profiles will be loaded here -->
                         </div>
-                        <div id="no-profiles" class="hidden text-center py-8 text-slate-400">
-                            <i data-lucide="users" class="h-12 w-12 mx-auto mb-3 opacity-50"></i>
-                            <p>No profiles found. Create a new project instead.</p>
+
+                        <div id="no-profiles" class="hidden">
+                            <div class="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4">
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="alert-circle" class="h-5 w-5 text-amber-200 flex-shrink-0 mt-0.5"></i>
+                                    <div class="text-sm text-amber-100">
+                                        <p class="font-medium mb-1">No Profiles Found</p>
+                                        <p class="text-amber-200/90">You haven't created any profiles yet. Profiles are created when you use the CLI to run <code class="bg-slate-900/50 px-1.5 py-0.5 rounded text-xs">shipphp init</code> or <code class="bg-slate-900/50 px-1.5 py-0.5 rounded text-xs">shipphp login</code>.</p>
+                                        <p class="text-amber-200/90 mt-2">To get started, go back and choose "Initialize New Project" instead.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
                         <div class="flex items-center justify-between mt-6">
-                            <button onclick="App.backToOptions()" class="text-sm text-slate-400 hover:text-white">
+                            <button onclick="App.backToOptions()" type="button" class="text-sm text-slate-400 hover:text-white">
                                 <i data-lucide="arrow-left" class="h-4 w-4 inline mr-1"></i> Back
+                            </button>
+                            <button onclick="App.showInitForm()" type="button" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 transition-colors">
+                                <i data-lucide="plus" class="h-4 w-4 inline mr-1"></i> Create New Instead
                             </button>
                         </div>
                     </div>
