@@ -207,19 +207,36 @@ class ApiServer
 
     private function handleHealth()
     {
+        $configExists = file_exists(ProjectPaths::configFile());
+
+        if (!$configExists) {
+            // Project not initialized - return basic status
+            $this->response->success([
+                'status' => 'not_initialized',
+                'initialized' => false,
+                'version' => SHIPPHP_VERSION,
+                'message' => 'Project not initialized. Please run setup.'
+            ], 'Project not initialized');
+            return;
+        }
+
         try {
             $this->initApi();
             $result = $this->api->getHealth();
-            $this->response->success($result, 'Health check complete');
+            $this->response->success([
+                'status' => 'connected',
+                'initialized' => true,
+                'server' => $result,
+                'version' => SHIPPHP_VERSION
+            ], 'Health check complete');
         } catch (\Exception $e) {
-            // Return basic health info even without server connection
+            // Config exists but can't connect to server
             $this->response->success([
                 'status' => 'disconnected',
-                'local' => [
-                    'initialized' => file_exists(ProjectPaths::configFile()),
-                    'version' => SHIPPHP_VERSION
-                ],
-                'error' => $e->getMessage()
+                'initialized' => true,
+                'version' => SHIPPHP_VERSION,
+                'error' => $e->getMessage(),
+                'message' => 'Cannot connect to server. Check your configuration.'
             ], 'Health check (local only)');
         }
     }
@@ -230,7 +247,8 @@ class ApiServer
         $this->initState();
 
         // Scan local files
-        $localFiles = $this->state->scanLocalFiles();
+        $ignore = $this->config->get('ignore', []);
+        $localFiles = $this->state->scanLocalFiles(WORKING_DIR, $ignore);
 
         // Get server files
         $serverFiles = $this->api->listFiles();
@@ -274,7 +292,8 @@ class ApiServer
         $dryRun = $this->request->input('dryRun', false);
 
         // Get changes
-        $localFiles = $this->state->scanLocalFiles();
+        $ignore = $this->config->get('ignore', []);
+        $localFiles = $this->state->scanLocalFiles(WORKING_DIR, $ignore);
         $serverFiles = $this->api->listFiles();
         $changes = $this->state->compareWithServer($serverFiles);
 
@@ -332,7 +351,8 @@ class ApiServer
         $dryRun = $this->request->input('dryRun', false);
 
         // Get changes
-        $localFiles = $this->state->scanLocalFiles();
+        $ignore = $this->config->get('ignore', []);
+        $localFiles = $this->state->scanLocalFiles(WORKING_DIR, $ignore);
         $serverFiles = $this->api->listFiles();
         $changes = $this->state->compareWithServer($serverFiles);
 
@@ -1012,20 +1032,42 @@ class ApiServer
             default:
                 // Return current config
                 if ($method === 'GET') {
+                    $configExists = file_exists(ProjectPaths::configFile());
+
+                    if (!$configExists) {
+                        // Not initialized
+                        $this->response->success([
+                            'initialized' => false,
+                            'version' => SHIPPHP_VERSION,
+                            'hasProfiles' => ProfileManager::init() && count(ProfileManager::all()) > 0
+                        ], 'Project not initialized');
+                        return;
+                    }
+
                     try {
                         $this->initApi();
                         $env = $this->config->getCurrentEnv();
+
+                        // Check for profile link
+                        $profileName = null;
+                        $linkFile = ProjectPaths::linkFile();
+                        if (file_exists($linkFile)) {
+                            ProfileManager::init();
+                            $profileId = trim(file_get_contents($linkFile));
+                            $profile = ProfileManager::get($profileId);
+                            $profileName = $profile['projectName'] ?? $profileId;
+                        }
+
                         $this->response->success([
+                            'initialized' => true,
                             'serverUrl' => $env['serverUrl'] ?? '',
-                            'token' => $env['token'] ?? '',
+                            'hasToken' => !empty($env['token']),
                             'version' => SHIPPHP_VERSION,
-                            'currentEnv' => $this->config->get('currentEnv', 'default')
+                            'currentEnv' => $this->config->get('currentEnv', 'default'),
+                            'profileName' => $profileName
                         ], 'Config retrieved');
                     } catch (\Exception $e) {
-                        $this->response->success([
-                            'initialized' => false,
-                            'version' => SHIPPHP_VERSION
-                        ], 'Project not initialized');
+                        $this->response->error('Failed to load config: ' . $e->getMessage(), 500);
                     }
                 } else {
                     $this->response->error('Invalid config action', 400);
