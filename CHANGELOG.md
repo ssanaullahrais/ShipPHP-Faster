@@ -5,6 +5,72 @@ All notable changes to ShipPHP Faster will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-02-01
+
+### ✨ Added
+- **Complete Web UI Dashboard** - Full-featured single-page application for managing deployments
+  - Splash/setup page with init project or profile selection (same workflow as CLI)
+  - Dashboard with overview stats, health status, and server info
+  - Status page with file change tracking (modified/new/deleted)
+  - Push page with progress indicators and options (backup, delete, dry-run)
+  - Pull page with download progress and options
+  - File Explorer with tree view, breadcrumb navigation, create folder/file, search
+  - Plans page for viewing and executing queued operations
+  - Backups page with create, restore, and delete functionality
+  - Trash management with restore and empty trash
+  - Server logs viewer with filtering (error/warning/info)
+  - Settings page with configuration and danger zone actions
+
+### 🎨 UI/UX
+- **Toast Notifications** - info (blue), success (green), error (red), warning (amber) with auto-dismiss
+- **Progress Indicators** - Animated progress bars with status-based colors
+- **Loading States** - Spinners and skeleton states for async operations
+- **Modal Dialogs** - For create folder/file, view file content, confirmations
+- **Global Progress Overlay** - For long-running operations
+- **Responsive Design** - Works on desktop and mobile devices
+- **Dark Theme** - Professional slate color scheme with Tailwind CSS
+
+### 🔧 API Enhancements
+- `POST /api/config/init` - Initialize new project from Web UI
+- `POST /api/config/login` - Connect to existing profile
+- `POST /api/config/disconnect` - Disconnect project
+- `POST /api/config/rotate-token` - Generate new authentication token
+- `GET /api/server/info` - Comprehensive server information
+- Updated status endpoint for proper change format (modified/new/deleted)
+
+## [2.2.0] - 2026-02-01
+
+### ✨ Added
+- **REST API Layer** - Complete API for Web UI integration
+  - `ApiServer.php` - Main API handler with 30+ endpoints
+  - `Request.php` - HTTP request parser
+  - `Response.php` - JSON response builder with CORS support
+  - `router.php` - PHP built-in server router
+
+- **File Management Commands** (13 new CLI commands)
+  - `web` - Launch Web UI server with `--port`, `--host`, `--open` options
+  - `mkdir <path>` - Create directories on server
+  - `touch <path>` - Create empty files on server
+  - `write <path>` - Write content to files (`--content`, `--from`)
+  - `read <path>` - Read file contents from server (`--save`)
+  - `search <pattern>` - Search files by name pattern (`--path`)
+  - `grep <text>` - Search file contents with regex (`--pattern`)
+  - `info <path>` - Get detailed file/directory information
+  - `stats` - Server statistics dashboard
+  - `copy <src> --to=<dest>` - Copy files on server
+  - `chmod <path> <mode>` - Change file permissions (`--recursive`)
+  - `logs` - View server logs (`--lines`, `--filter`)
+  - `watch` - Watch for file changes in realtime (`--interval`)
+
+- **Server Template Updates** - 16 new server actions
+  - `mkdir`, `touch`, `write`, `read`, `edit`, `copy`, `chmod`
+  - `fileInfo`, `search`, `grep`, `stats`, `logs`, `tree`, `watch`
+  - `emptyTrash`, `rename`
+
+### 🛠️ Improved
+- `ApiClient.php` - Added methods for all new server actions
+- `Application.php` - Registered all new commands with help text
+
 ## [2.1.1] - 2026-02-20
 
 ### 🛠️ Improved
@@ -429,7 +495,7 @@ Contributions are welcome! Please read our contributing guidelines (coming soon)
 - [ ] Slack/Discord notifications
 - [ ] Rollback to specific versions
 - [ ] Differential backups
-- [ ] Web UI for management
+- [x] Web UI for management ✅ (Completed in v2.3.0)
 - [ ] Team collaboration features
 
 ### Long-term Vision
@@ -437,7 +503,7 @@ Contributions are welcome! Please read our contributing guidelines (coming soon)
 - [ ] Role-based access control (RBAC)
 - [ ] Cloud storage integration (S3, GCS, Azure)
 - [ ] Advanced conflict resolution
-- [ ] Real-time sync mode
+- [x] Real-time sync mode ✅ (Watch command in v2.2.0)
 - [ ] 2FA support
 
 ---

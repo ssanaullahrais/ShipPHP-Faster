@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ShipPHP Faster** (v2.1.1) is a professional, git-like PHP deployment tool that provides secure push/pull functionality for syncing files between a local development environment and a web server. It features automatic change detection, comprehensive backup/restore functionality, global profile management, operation planning, and enterprise-grade security.
+**ShipPHP Faster** (v2.3.0) is a professional, git-like PHP deployment tool that provides secure push/pull functionality for syncing files between a local development environment and a web server. It features automatic change detection, comprehensive backup/restore functionality, global profile management, operation planning, Web UI dashboard, and enterprise-grade security.
 
 ### Key Components
 
@@ -734,7 +734,8 @@ Error responses:
 
 ## Version History
 
-- **v2.2.0** - Web UI with REST API, file management commands (mkdir, touch, write, read, copy, chmod, search, grep, info, stats, logs, watch)
+- **v2.3.0** - Complete Web UI dashboard with full API integration, setup wizard, file explorer, toast notifications, progress indicators
+- **v2.2.0** - REST API layer, file management commands (mkdir, touch, write, read, copy, chmod, search, grep, info, stats, logs, watch)
 - **v2.1.1** - Centralized version reporting, profile persistence
 - **v2.1.0** - Config isolation, direct path overrides, server utilities
 - **v2.0.0** - Initial public release with core deployment features

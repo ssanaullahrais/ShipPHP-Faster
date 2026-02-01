@@ -1,3 +1,3 @@
 <?php
 
-return '2.1.1';
+return '2.3.0';
