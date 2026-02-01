@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ShipPHP Faster** (v2.4.0) is a professional, git-like PHP deployment tool that provides secure push/pull functionality for syncing files between a local development environment and a web server. It features automatic change detection, comprehensive backup/restore functionality, global profile management, operation planning, Web UI dashboard with Netflix-style profile selection, API testing capabilities, and enterprise-grade security.
+**ShipPHP Faster** (v2.4.1) is a professional, git-like PHP deployment tool that provides secure push/pull functionality for syncing files between a local development environment and a web server. It features automatic change detection, comprehensive backup/restore functionality, global profile management, operation planning, modern single-page Web UI with profile selection, comprehensive REST API, and enterprise-grade security.
 
 ### Key Components
 
@@ -129,11 +129,14 @@ shipphp/
 ├── templates/               # Template files
 │   └── shipphp-server.template.php  # Server-side receiver template
 ├── src/
-│   ├── Api/                 # REST API for Web UI (NEW)
+│   ├── Api/                 # REST API for Web UI
 │   │   ├── router.php           # PHP built-in server router
 │   │   ├── ApiServer.php        # Main API handler
 │   │   ├── Request.php          # HTTP request parser
 │   │   └── Response.php         # JSON response builder
+│   ├── Web/                 # Web UI (Single Page Application)
+│   │   ├── index.html           # Main UI with profile selection & dashboard
+│   │   └── app.js               # JavaScript application logic
 │   ├── Commands/            # Command classes (38 commands)
 │   │   ├── ApplyCommand.php       # Execute queued operations
 │   │   ├── BackupCommand.php      # Version-tracked backup system
@@ -662,6 +665,23 @@ class MyCommand extends BaseCommand
 
 ## Web UI & REST API
 
+### Web UI Overview
+
+The Web UI is a modern single-page application that provides a graphical interface for ShipPHP operations. It features:
+
+- **Profile-based workflow**: Select from available global profiles to connect to a project
+- **Initialization support**: Can initialize projects that aren't configured yet
+- **Real-time operations**: Push, pull, and status checking with live feedback
+- **Clean, modern interface**: Built with Tailwind CSS for responsive design
+- **Toast notifications**: User-friendly feedback for all operations
+
+**Key Features:**
+- Profile selection screen when project is not initialized
+- Dashboard with quick actions (Status, Push, Pull)
+- Server information display
+- File change tracking and visualization
+- Disconnect capability to switch between profiles
+
 ### Launching Web UI
 
 ```bash
@@ -669,6 +689,8 @@ shipphp web                    # Start at http://localhost:8080
 shipphp web --port=3000        # Custom port
 shipphp web --open             # Open browser automatically
 ```
+
+**Note**: The Web UI can be run from any directory. If the project is not initialized, it will display available profiles for connection. Once connected, it provides full access to deployment operations.
 
 ### REST API Endpoints
 
@@ -734,6 +756,7 @@ Error responses:
 
 ## Version History
 
+- **v2.4.1** - Refactored Web UI to single-page application with streamlined profile-based workflow, removed multi-page approach
 - **v2.4.0** - Netflix-style profile selection, API testing page, profile deletion, critical API fixes (scanLocalFiles), improved initialization workflow, token generation helper
 - **v2.3.0** - Complete Web UI dashboard with full API integration, setup wizard, file explorer, toast notifications, progress indicators
 - **v2.2.0** - REST API layer, file management commands (mkdir, touch, write, read, copy, chmod, search, grep, info, stats, logs, watch)

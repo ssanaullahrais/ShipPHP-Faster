@@ -3,904 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShipPHP - Web Dashboard</title>
+    <title>ShipPHP Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        border: "hsl(214.3 31.8% 91.4%)",
-                        background: "hsl(0 0% 100%)",
-                        foreground: "hsl(222.2 47.4% 11.2%)",
-                        muted: "hsl(210 40% 96.1%)",
-                        mutedForeground: "hsl(215.4 16.3% 46.9%)",
-                        primary: "hsl(222.2 47.4% 11.2%)",
-                        primaryForeground: "hsl(210 40% 98%)",
-                        card: "hsl(0 0% 100%)",
-                        cardForeground: "hsl(222.2 47.4% 11.2%)",
-                    },
-                    borderRadius: { xl: "0.75rem" },
-                    boxShadow: { soft: "0 10px 35px rgba(15, 23, 42, 0.12)" },
-                },
-            },
-        };
-    </script>
-    <style>
-        /* Toast animations */
-        .toast-enter { animation: toastIn 0.3s ease-out; }
-        .toast-exit { animation: toastOut 0.3s ease-in forwards; }
-        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-
-        /* Progress bar */
-        .progress-bar { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
-        .progress-bar-success { background: linear-gradient(90deg, #22c55e, #4ade80); }
-        .progress-bar-error { background: linear-gradient(90deg, #ef4444, #f87171); }
-
-        /* Spinner */
-        .spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* Fade transitions */
-        .fade-in { animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Page transitions */
-        .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.2s ease-out; }
-
-        /* Modal */
-        .modal-backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
-
-        /* File tree indent */
-        .tree-indent { padding-left: 1.5rem; }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-    </style>
 </head>
-<body class="bg-slate-950 text-slate-100">
-    <div id="app" class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-
-        <!-- Splash/Loading Screen -->
-        <div id="splash-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950">
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <!-- App Container -->
+    <div id="app">
+        <!-- Loading State -->
+        <div id="loading" class="flex items-center justify-center min-h-screen">
             <div class="text-center">
-                <div class="flex h-20 w-20 mx-auto items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-200 mb-6">
-                    <i data-lucide="ship" class="h-10 w-10"></i>
-                </div>
-                <h1 class="text-3xl font-bold text-white mb-2">ShipPHP</h1>
-                <p class="text-slate-400 mb-6">Professional PHP Deployment Tool</p>
-                <div class="flex items-center justify-center gap-2">
-                    <div class="h-2 w-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0ms;"></div>
-                    <div class="h-2 w-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 150ms;"></div>
-                    <div class="h-2 w-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 300ms;"></div>
-                </div>
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p class="text-slate-400">Loading ShipPHP...</p>
             </div>
         </div>
 
-        <!-- Setup Page (Project/Profile Selection) -->
-        <div id="page-setup" class="page">
-            <div class="min-h-screen flex items-center justify-center p-6">
-                <div class="w-full max-w-2xl">
-                    <div class="text-center mb-8">
-                        <div class="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-200 mb-4">
-                            <i data-lucide="ship" class="h-8 w-8"></i>
-                        </div>
-                        <h1 class="text-3xl font-bold text-white">Select Project</h1>
-                        <p class="text-slate-400 mt-2">Choose a project to work with or create a new one</p>
-                    </div>
-
-                    <!-- Setup Steps -->
-                    <div class="flex items-center justify-center gap-4 mb-8">
-                        <div id="step-1" class="flex items-center gap-2">
-                            <div class="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-semibold">1</div>
-                            <span class="text-sm text-white">Choose Option</span>
-                        </div>
-                        <div class="h-px w-8 bg-slate-700"></div>
-                        <div id="step-2" class="flex items-center gap-2 opacity-50">
-                            <div class="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-sm font-semibold">2</div>
-                            <span class="text-sm text-slate-400">Configure</span>
-                        </div>
-                        <div class="h-px w-8 bg-slate-700"></div>
-                        <div id="step-3" class="flex items-center gap-2 opacity-50">
-                            <div class="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-sm font-semibold">3</div>
-                            <span class="text-sm text-slate-400">Connect</span>
-                        </div>
-                    </div>
-
-                    <!-- Option Selection -->
-                    <div id="setup-options" class="grid md:grid-cols-2 gap-4">
-                        <button onclick="App.showInitForm()" class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 text-left hover:border-indigo-500/50 transition-colors">
-                            <div class="flex items-center gap-3 mb-3">
-                                <div class="h-10 w-10 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                                    <i data-lucide="plus-circle" class="h-5 w-5 text-indigo-200"></i>
-                                </div>
-                                <h3 class="text-lg font-semibold text-white">Initialize New Project</h3>
-                            </div>
-                            <p class="text-sm text-slate-400">Create a new shipphp.json configuration and connect to your server.</p>
-                        </button>
-                        <button onclick="App.showProfileSelect()" class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 text-left hover:border-emerald-500/50 transition-colors">
-                            <div class="flex items-center gap-3 mb-3">
-                                <div class="h-10 w-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                                    <i data-lucide="user-check" class="h-5 w-5 text-emerald-200"></i>
-                                </div>
-                                <h3 class="text-lg font-semibold text-white">Use Existing Profile</h3>
-                            </div>
-                            <p class="text-sm text-slate-400">Connect to a saved profile from your global configuration.</p>
-                        </button>
-                    </div>
-
-                    <!-- Init Form -->
-                    <div id="setup-init-form" class="hidden rounded-xl border border-slate-800 bg-slate-900/60 p-6">
-                        <h3 class="text-xl font-semibold text-white mb-2">Initialize New Project</h3>
-                        <p class="text-sm text-slate-400 mb-6">Set up ShipPHP to deploy your local files to a remote server.</p>
-
-                        <!-- Step-by-step instructions -->
-                        <div class="rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-4 mb-6">
-                            <div class="flex items-start gap-3">
-                                <i data-lucide="info" class="h-5 w-5 text-indigo-200 flex-shrink-0 mt-0.5"></i>
-                                <div class="text-sm text-indigo-100">
-                                    <p class="font-medium mb-2">Setup Instructions:</p>
-                                    <ol class="space-y-1 text-indigo-200/90 list-decimal list-inside">
-                                        <li>Generate <code class="bg-slate-900/50 px-1.5 py-0.5 rounded text-xs">shipphp-server.php</code> using CLI: <code class="bg-slate-900/50 px-1.5 py-0.5 rounded text-xs">shipphp server generate</code></li>
-                                        <li>Upload the generated file to your web server</li>
-                                        <li>Copy the server URL and authentication token from the file</li>
-                                        <li>Enter the details below to complete setup</li>
-                                    </ol>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Project Name</label>
-                                <input type="text" id="init-project-name" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none" placeholder="My Website">
-                            </div>
-                            <div>
-                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Environment</label>
-                                <select id="init-environment" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none">
-                                    <option value="production">Production</option>
-                                    <option value="staging">Staging</option>
-                                    <option value="development">Development</option>
-                                </select>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">
-                                    Server URL
-                                    <span class="text-slate-500 normal-case tracking-normal font-normal ml-1">(where you uploaded shipphp-server.php)</span>
-                                </label>
-                                <input type="url" id="init-server-url" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none" placeholder="https://example.com/shipphp-server.php" required>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">
-                                    Authentication Token
-                                    <span class="text-slate-500 normal-case tracking-normal font-normal ml-1">(64-character token from shipphp-server.php)</span>
-                                </label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="init-token" class="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-mono focus:border-indigo-500 focus:outline-none" placeholder="64-character hexadecimal token" required>
-                                    <button onclick="App.generateToken()" type="button" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 whitespace-nowrap">
-                                        <i data-lucide="key" class="h-4 w-4 inline mr-1"></i> Generate
-                                    </button>
-                                </div>
-                                <p class="text-xs text-slate-500 mt-1">Or click Generate to create a new token (remember to update your server file)</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between mt-6">
-                            <button onclick="App.backToOptions()" type="button" class="text-sm text-slate-400 hover:text-white">
-                                <i data-lucide="arrow-left" class="h-4 w-4 inline mr-1"></i> Back
-                            </button>
-                            <button onclick="App.initProject()" type="button" class="rounded-lg bg-indigo-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 transition-colors">
-                                <i data-lucide="check" class="h-4 w-4 inline mr-1"></i> Initialize & Connect
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Profile Selection -->
-                    <div id="setup-profile-select" class="hidden rounded-xl border border-slate-800 bg-slate-900/60 p-6">
-                        <h3 class="text-xl font-semibold text-white mb-2">Select Profile</h3>
-                        <p class="text-sm text-slate-400 mb-6">Connect to an existing ShipPHP profile from your global configuration.</p>
-
-                        <div id="profile-list" class="space-y-3 max-h-64 overflow-y-auto mb-4">
-                            <!-- Profiles will be loaded here -->
-                        </div>
-
-                        <div id="no-profiles" class="hidden">
-                            <div class="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-4">
-                                <div class="flex items-start gap-3">
-                                    <i data-lucide="alert-circle" class="h-5 w-5 text-amber-200 flex-shrink-0 mt-0.5"></i>
-                                    <div class="text-sm text-amber-100">
-                                        <p class="font-medium mb-1">No Profiles Found</p>
-                                        <p class="text-amber-200/90">You haven't created any profiles yet. Profiles are created when you use the CLI to run <code class="bg-slate-900/50 px-1.5 py-0.5 rounded text-xs">shipphp init</code> or <code class="bg-slate-900/50 px-1.5 py-0.5 rounded text-xs">shipphp login</code>.</p>
-                                        <p class="text-amber-200/90 mt-2">To get started, go back and choose "Initialize New Project" instead.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-between mt-6">
-                            <button onclick="App.backToOptions()" type="button" class="text-sm text-slate-400 hover:text-white">
-                                <i data-lucide="arrow-left" class="h-4 w-4 inline mr-1"></i> Back
-                            </button>
-                            <button onclick="App.showInitForm()" type="button" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600 transition-colors">
-                                <i data-lucide="plus" class="h-4 w-4 inline mr-1"></i> Create New Instead
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Dashboard Layout -->
-        <div id="main-layout" class="hidden">
-            <!-- Header -->
-            <header class="border-b border-slate-800/80 sticky top-0 z-40 bg-slate-950/90 backdrop-blur-sm">
-                <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-200">
-                            <i data-lucide="ship" class="h-5 w-5"></i>
+        <!-- Not Initialized / Profile Selection -->
+        <div id="profile-selection" class="hidden min-h-screen p-8">
+            <div class="max-w-4xl mx-auto">
+                <!-- Header -->
+                <div class="mb-8">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
                         </div>
                         <div>
-                            <p class="text-xs uppercase tracking-[0.25em] text-slate-400">ShipPHP</p>
-                            <h1 id="header-title" class="text-lg font-semibold text-white">Dashboard</h1>
+                            <h1 class="text-2xl font-bold text-white">ShipPHP</h1>
+                            <p class="text-sm text-slate-400">Deploy PHP projects faster</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div id="connection-status" class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
-                            <i data-lucide="wifi" class="h-3 w-3 inline mr-1"></i>
-                            <span id="profile-name">Connected</span>
+                </div>
+
+                <!-- Not Initialized Message -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-8 mb-6">
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-500/10 mb-4">
+                            <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
                         </div>
-                        <button onclick="App.toggleMaintenance()" id="maintenance-btn" class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800">
-                            <i data-lucide="shield-alert" class="h-4 w-4 inline mr-1"></i>
-                            Maintenance
-                        </button>
-                        <button onclick="App.navigate('settings')" class="rounded-lg border border-slate-700 bg-slate-900 p-2 text-slate-200 hover:bg-slate-800">
-                            <i data-lucide="settings" class="h-4 w-4"></i>
-                        </button>
+                        <h2 class="text-xl font-semibold text-white mb-2">Project Not Initialized</h2>
+                        <p class="text-slate-400">This project is not configured yet. Please select a profile to connect.</p>
+                    </div>
+                </div>
+
+                <!-- Profile List -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Available Profiles</h3>
+                    <div id="profiles-list" class="space-y-3">
+                        <!-- Profiles will be loaded here -->
+                    </div>
+                    <div id="no-profiles" class="hidden text-center py-8">
+                        <p class="text-slate-400 mb-4">No profiles found. Create one using the CLI:</p>
+                        <code class="bg-slate-950 text-blue-400 px-4 py-2 rounded-lg inline-block">shipphp profile add</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div id="dashboard" class="hidden">
+            <!-- Header -->
+            <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur">
+                <div class="max-w-7xl mx-auto px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-lg font-semibold text-white">ShipPHP</h1>
+                                <p class="text-xs text-slate-400" id="profile-name">Loading...</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div id="connection-status" class="px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400">
+                                Connected
+                            </div>
+                            <button onclick="app.disconnect()" class="text-slate-400 hover:text-white transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            <main class="mx-auto grid max-w-7xl grid-cols-12 gap-6 px-6 py-6">
-                <!-- Sidebar -->
-                <aside class="col-span-12 space-y-4 lg:col-span-3">
-                    <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                        <p class="text-xs uppercase tracking-[0.2em] text-slate-500 mb-4">Navigation</p>
-                        <nav class="space-y-1.5 text-sm">
-                            <a href="#" onclick="App.navigate('dashboard')" data-nav="dashboard" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="layout-dashboard" class="h-4 w-4 inline mr-2"></i>Dashboard</span>
-                            </a>
-                            <a href="#" onclick="App.navigate('status')" data-nav="status" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="git-compare" class="h-4 w-4 inline mr-2"></i>Status</span>
-                                <span id="status-badge" class="hidden rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-200">0</span>
-                            </a>
-                            <a href="#" onclick="App.navigate('push')" data-nav="push" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="upload" class="h-4 w-4 inline mr-2"></i>Push</span>
-                            </a>
-                            <a href="#" onclick="App.navigate('pull')" data-nav="pull" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="download" class="h-4 w-4 inline mr-2"></i>Pull</span>
-                            </a>
-                            <a href="#" onclick="App.navigate('files')" data-nav="files" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="folder-tree" class="h-4 w-4 inline mr-2"></i>Files</span>
-                            </a>
-                            <a href="#" onclick="App.navigate('plans')" data-nav="plans" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="clipboard-list" class="h-4 w-4 inline mr-2"></i>Plans</span>
-                                <span id="plans-badge" class="hidden rounded-full bg-indigo-500/20 px-2 py-0.5 text-xs text-indigo-200">0</span>
-                            </a>
-                            <a href="#" onclick="App.navigate('backups')" data-nav="backups" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="archive" class="h-4 w-4 inline mr-2"></i>Backups</span>
-                            </a>
-                            <a href="#" onclick="App.navigate('trash')" data-nav="trash" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="trash-2" class="h-4 w-4 inline mr-2"></i>Trash</span>
-                                <span id="trash-badge" class="hidden rounded-full bg-rose-500/20 px-2 py-0.5 text-xs text-rose-200">0</span>
-                            </a>
-                            <a href="#" onclick="App.navigate('logs')" data-nav="logs" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="scroll-text" class="h-4 w-4 inline mr-2"></i>Logs</span>
-                            </a>
-                            <a href="#" onclick="App.navigate('api-test')" data-nav="api-test" class="nav-item flex items-center justify-between rounded-lg px-3 py-2.5 text-slate-300 hover:bg-slate-800/50">
-                                <span><i data-lucide="activity" class="h-4 w-4 inline mr-2"></i>API Test</span>
-                            </a>
-                        </nav>
-                    </div>
-
-                    <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                        <p class="text-xs uppercase tracking-[0.2em] text-slate-500 mb-4">Quick Actions</p>
-                        <div class="space-y-2">
-                            <button onclick="App.quickSync()" class="w-full rounded-lg bg-indigo-500 px-3 py-2.5 text-sm font-medium text-white hover:bg-indigo-600">
-                                <i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i> Quick Sync
-                            </button>
-                            <button onclick="App.createBackup()" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-700">
-                                <i data-lucide="save" class="h-4 w-4 inline mr-1"></i> Create Backup
-                            </button>
-                            <button onclick="App.refreshStatus()" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-700">
-                                <i data-lucide="rotate-cw" class="h-4 w-4 inline mr-1"></i> Refresh Status
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                        <p class="text-xs uppercase tracking-[0.2em] text-slate-500 mb-3">Server Health</p>
-                        <div id="health-status" class="text-center py-4">
-                            <div class="spinner h-6 w-6 mx-auto border-2 border-slate-600 border-t-indigo-500 rounded-full"></div>
-                        </div>
-                    </div>
-                </aside>
-
-                <!-- Main Content -->
-                <section class="col-span-12 lg:col-span-9 space-y-6">
-                    <!-- Dashboard Page -->
-                    <div id="page-dashboard" class="page active space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">Overview</h2>
-                                    <p class="text-sm text-slate-400">Live status from your server and pending actions.</p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="App.refreshAll()" class="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-slate-200 hover:bg-slate-700">
-                                        <i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i> Refresh
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="mt-6 grid gap-4 md:grid-cols-4">
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs uppercase text-slate-400">Changes</p>
-                                        <i data-lucide="git-compare" class="h-4 w-4 text-amber-200"></i>
-                                    </div>
-                                    <p id="stat-changes" class="mt-2 text-2xl font-semibold">-</p>
-                                    <p class="text-xs text-slate-500">Files modified</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs uppercase text-slate-400">Plans</p>
-                                        <i data-lucide="clipboard-check" class="h-4 w-4 text-indigo-200"></i>
-                                    </div>
-                                    <p id="stat-plans" class="mt-2 text-2xl font-semibold">-</p>
-                                    <p class="text-xs text-slate-500">Queued operations</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs uppercase text-slate-400">Backups</p>
-                                        <i data-lucide="archive" class="h-4 w-4 text-emerald-200"></i>
-                                    </div>
-                                    <p id="stat-backups" class="mt-2 text-2xl font-semibold">-</p>
-                                    <p class="text-xs text-slate-500">Available</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-xs uppercase text-slate-400">Trash</p>
-                                        <i data-lucide="trash-2" class="h-4 w-4 text-rose-200"></i>
-                                    </div>
-                                    <p id="stat-trash" class="mt-2 text-2xl font-semibold">-</p>
-                                    <p class="text-xs text-slate-500">Items</p>
-                                </div>
+            <!-- Main Content -->
+            <main class="max-w-7xl mx-auto px-6 py-8">
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <button onclick="app.showStatus()" class="bg-slate-900 border border-slate-800 rounded-xl p-6 text-left hover:border-blue-500 transition group">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="p-3 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
                             </div>
                         </div>
+                        <h3 class="text-lg font-semibold text-white mb-1">Check Status</h3>
+                        <p class="text-sm text-slate-400">View changed files and sync status</p>
+                    </button>
 
-                        <div class="grid gap-6 lg:grid-cols-3">
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft lg:col-span-2">
-                                <div class="flex items-center justify-between">
-                                    <h3 class="text-lg font-semibold">Recent Changes</h3>
-                                    <button onclick="App.navigate('status')" class="text-xs text-indigo-400 hover:text-indigo-300">View all</button>
-                                </div>
-                                <div id="recent-changes" class="mt-4 space-y-2 text-sm max-h-64 overflow-y-auto">
-                                    <div class="text-center py-8 text-slate-400">
-                                        <i data-lucide="check-circle" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
-                                        <p>No pending changes</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                                <h3 class="text-lg font-semibold mb-4">Server Info</h3>
-                                <div id="server-info" class="space-y-3 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-slate-400">PHP Version</span>
-                                        <span id="info-php" class="text-slate-200">-</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-slate-400">Server</span>
-                                        <span id="info-server" class="text-slate-200">-</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-slate-400">Base Path</span>
-                                        <span id="info-path" class="text-slate-200 text-right truncate max-w-[150px]" title="">-</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-slate-400">ShipPHP</span>
-                                        <span id="info-version" class="text-slate-200">-</span>
-                                    </div>
-                                </div>
+                    <button onclick="app.push()" class="bg-slate-900 border border-slate-800 rounded-xl p-6 text-left hover:border-blue-500 transition group">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="p-3 rounded-lg bg-green-500/10 text-green-400 group-hover:bg-green-500/20 transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
                             </div>
                         </div>
-                    </div>
+                        <h3 class="text-lg font-semibold text-white mb-1">Push Changes</h3>
+                        <p class="text-sm text-slate-400">Deploy local changes to server</p>
+                    </button>
 
-                    <!-- Status Page -->
-                    <div id="page-status" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">File Status</h2>
-                                    <p class="text-sm text-slate-400">Changes between local and server files.</p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="App.refreshStatus()" class="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-slate-200 hover:bg-slate-700">
-                                        <i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i> Refresh
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="mt-6 grid gap-4 md:grid-cols-3">
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <p class="text-xs uppercase text-slate-400">Modified</p>
-                                    <p id="status-modified" class="mt-2 text-2xl font-semibold text-amber-200">0</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <p class="text-xs uppercase text-slate-400">New</p>
-                                    <p id="status-new" class="mt-2 text-2xl font-semibold text-emerald-200">0</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <p class="text-xs uppercase text-slate-400">Deleted</p>
-                                    <p id="status-deleted" class="mt-2 text-2xl font-semibold text-rose-200">0</p>
-                                </div>
+                    <button onclick="app.pull()" class="bg-slate-900 border border-slate-800 rounded-xl p-6 text-left hover:border-blue-500 transition group">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="p-3 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3v-12"></path>
+                                </svg>
                             </div>
                         </div>
-
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-semibold">Changed Files</h3>
-                                <div class="flex gap-2">
-                                    <button onclick="App.selectAllChanges()" class="text-xs text-slate-400 hover:text-white">Select All</button>
-                                </div>
-                            </div>
-                            <div id="status-files" class="space-y-2 text-sm max-h-96 overflow-y-auto">
-                                <div class="text-center py-8 text-slate-400">
-                                    <i data-lucide="check-circle" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
-                                    <p>Everything is in sync!</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Push Page -->
-                    <div id="page-push" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">Push to Server</h2>
-                                    <p class="text-sm text-slate-400">Upload local changes to the remote server.</p>
-                                </div>
-                            </div>
-
-                            <div class="mt-6 grid gap-4 md:grid-cols-3">
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <p class="text-xs uppercase text-slate-400">To Upload</p>
-                                    <p id="push-upload" class="mt-2 text-2xl font-semibold text-emerald-200">0</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <p class="text-xs uppercase text-slate-400">To Delete</p>
-                                    <p id="push-delete" class="mt-2 text-2xl font-semibold text-rose-200">0</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <p class="text-xs uppercase text-slate-400">Total Size</p>
-                                    <p id="push-size" class="mt-2 text-2xl font-semibold">0 KB</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid gap-6 lg:grid-cols-3">
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft lg:col-span-2">
-                                <h3 class="text-lg font-semibold mb-4">Files to Push</h3>
-                                <div id="push-files" class="space-y-2 text-sm max-h-72 overflow-y-auto">
-                                    <div class="text-center py-8 text-slate-400">
-                                        <p>No files to push</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                                <h3 class="text-lg font-semibold mb-4">Push Options</h3>
-                                <div class="space-y-3">
-                                    <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 p-3 cursor-pointer">
-                                        <span class="text-sm text-slate-300">Create backup first</span>
-                                        <input type="checkbox" id="push-backup" checked class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500">
-                                    </label>
-                                    <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 p-3 cursor-pointer">
-                                        <span class="text-sm text-slate-300">Delete removed files</span>
-                                        <input type="checkbox" id="push-delete-files" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500">
-                                    </label>
-                                    <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 p-3 cursor-pointer">
-                                        <span class="text-sm text-slate-300">Dry run (preview only)</span>
-                                        <input type="checkbox" id="push-dry-run" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500">
-                                    </label>
-                                </div>
-                                <button onclick="App.executePush()" class="w-full mt-4 rounded-lg bg-emerald-500 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-600">
-                                    <i data-lucide="upload" class="h-4 w-4 inline mr-1"></i> Start Push
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Push Progress -->
-                        <div id="push-progress" class="hidden rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-semibold">Push Progress</h3>
-                                <span id="push-progress-text" class="text-sm text-slate-400">0%</span>
-                            </div>
-                            <div class="h-3 w-full rounded-full bg-slate-800">
-                                <div id="push-progress-bar" class="progress-bar h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <p id="push-progress-file" class="mt-3 text-sm text-slate-400">Preparing...</p>
-                        </div>
-                    </div>
-
-                    <!-- Pull Page -->
-                    <div id="page-pull" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">Pull from Server</h2>
-                                    <p class="text-sm text-slate-400">Download server changes to local.</p>
-                                </div>
-                            </div>
-
-                            <div class="mt-6 grid gap-4 md:grid-cols-3">
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <p class="text-xs uppercase text-slate-400">To Download</p>
-                                    <p id="pull-download" class="mt-2 text-2xl font-semibold text-emerald-200">0</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <p class="text-xs uppercase text-slate-400">To Delete</p>
-                                    <p id="pull-delete" class="mt-2 text-2xl font-semibold text-rose-200">0</p>
-                                </div>
-                                <div class="rounded-xl border border-slate-800 bg-slate-800/50 p-4">
-                                    <p class="text-xs uppercase text-slate-400">Total Size</p>
-                                    <p id="pull-size" class="mt-2 text-2xl font-semibold">0 KB</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid gap-6 lg:grid-cols-3">
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft lg:col-span-2">
-                                <h3 class="text-lg font-semibold mb-4">Files to Pull</h3>
-                                <div id="pull-files" class="space-y-2 text-sm max-h-72 overflow-y-auto">
-                                    <div class="text-center py-8 text-slate-400">
-                                        <p>No files to pull</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                                <h3 class="text-lg font-semibold mb-4">Pull Options</h3>
-                                <div class="space-y-3">
-                                    <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 p-3 cursor-pointer">
-                                        <span class="text-sm text-slate-300">Create backup first</span>
-                                        <input type="checkbox" id="pull-backup" checked class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500">
-                                    </label>
-                                    <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 p-3 cursor-pointer">
-                                        <span class="text-sm text-slate-300">Overwrite local files</span>
-                                        <input type="checkbox" id="pull-overwrite" checked class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500">
-                                    </label>
-                                </div>
-                                <button onclick="App.executePull()" class="w-full mt-4 rounded-lg bg-indigo-500 px-4 py-3 text-sm font-medium text-white hover:bg-indigo-600">
-                                    <i data-lucide="download" class="h-4 w-4 inline mr-1"></i> Start Pull
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Pull Progress -->
-                        <div id="pull-progress" class="hidden rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-semibold">Pull Progress</h3>
-                                <span id="pull-progress-text" class="text-sm text-slate-400">0%</span>
-                            </div>
-                            <div class="h-3 w-full rounded-full bg-slate-800">
-                                <div id="pull-progress-bar" class="progress-bar h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <p id="pull-progress-file" class="mt-3 text-sm text-slate-400">Preparing...</p>
-                        </div>
-                    </div>
-
-                    <!-- Files Page -->
-                    <div id="page-files" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">File Explorer</h2>
-                                    <p class="text-sm text-slate-400">Browse and manage server files.</p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="App.showCreateFolder()" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">
-                                        <i data-lucide="folder-plus" class="h-4 w-4 inline mr-1"></i> New Folder
-                                    </button>
-                                    <button onclick="App.showCreateFile()" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">
-                                        <i data-lucide="file-plus" class="h-4 w-4 inline mr-1"></i> New File
-                                    </button>
-                                    <button onclick="App.refreshTree()" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">
-                                        <i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i> Refresh
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid gap-6 lg:grid-cols-3">
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft lg:col-span-2">
-                                <div class="flex items-center gap-2 mb-4">
-                                    <button onclick="App.navigateUp()" class="rounded p-1 hover:bg-slate-800">
-                                        <i data-lucide="arrow-up" class="h-4 w-4"></i>
-                                    </button>
-                                    <div id="file-breadcrumb" class="flex items-center gap-1 text-sm text-slate-400 overflow-x-auto">
-                                        <span class="text-white">/</span>
-                                    </div>
-                                </div>
-                                <div id="file-tree" class="space-y-1 text-sm max-h-96 overflow-y-auto">
-                                    <div class="text-center py-8 text-slate-400">
-                                        <div class="spinner h-6 w-6 mx-auto border-2 border-slate-600 border-t-indigo-500 rounded-full"></div>
-                                        <p class="mt-2">Loading...</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                                <h3 class="text-lg font-semibold mb-4">File Details</h3>
-                                <div id="file-details" class="text-sm">
-                                    <div class="text-center py-8 text-slate-400">
-                                        <i data-lucide="file" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
-                                        <p>Select a file to view details</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Search -->
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                            <h3 class="text-lg font-semibold mb-4">Search Files</h3>
-                            <div class="flex gap-4">
-                                <input type="text" id="search-query" class="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none" placeholder="Search pattern (e.g., *.php, config*)">
-                                <button onclick="App.searchFiles()" class="rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-600">
-                                    <i data-lucide="search" class="h-4 w-4 inline mr-1"></i> Search
-                                </button>
-                            </div>
-                            <div id="search-results" class="mt-4 hidden space-y-2 text-sm max-h-48 overflow-y-auto"></div>
-                        </div>
-                    </div>
-
-                    <!-- Plans Page -->
-                    <div id="page-plans" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">Operation Plans</h2>
-                                    <p class="text-sm text-slate-400">Review and execute queued operations.</p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="App.clearPlans()" class="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-slate-200 hover:bg-slate-700">
-                                        <i data-lucide="x" class="h-4 w-4 inline mr-1"></i> Clear All
-                                    </button>
-                                    <button onclick="App.applyPlans()" class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">
-                                        <i data-lucide="play" class="h-4 w-4 inline mr-1"></i> Apply All
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                            <h3 class="text-lg font-semibold mb-4">Queued Operations</h3>
-                            <div id="plans-list" class="space-y-2 text-sm">
-                                <div class="text-center py-8 text-slate-400">
-                                    <i data-lucide="clipboard" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
-                                    <p>No queued operations</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Backups Page -->
-                    <div id="page-backups" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">Backups</h2>
-                                    <p class="text-sm text-slate-400">Manage and restore backups.</p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="App.createBackup()" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600">
-                                        <i data-lucide="plus" class="h-4 w-4 inline mr-1"></i> Create Backup
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                            <h3 class="text-lg font-semibold mb-4">Backup History</h3>
-                            <div id="backups-list" class="space-y-2 text-sm">
-                                <div class="text-center py-8 text-slate-400">
-                                    <i data-lucide="archive" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
-                                    <p>No backups found</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Trash Page -->
-                    <div id="page-trash" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">Trash</h2>
-                                    <p class="text-sm text-slate-400">Restore or permanently delete trashed items.</p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="App.emptyTrash()" class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-200 hover:bg-rose-500/20">
-                                        <i data-lucide="trash-2" class="h-4 w-4 inline mr-1"></i> Empty Trash
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                            <h3 class="text-lg font-semibold mb-4">Trashed Items</h3>
-                            <div id="trash-list" class="space-y-2 text-sm">
-                                <div class="text-center py-8 text-slate-400">
-                                    <i data-lucide="trash-2" class="h-8 w-8 mx-auto mb-2 opacity-50"></i>
-                                    <p>Trash is empty</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Logs Page -->
-                    <div id="page-logs" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">Server Logs</h2>
-                                    <p class="text-sm text-slate-400">View server activity and error logs.</p>
-                                </div>
-                                <div class="flex gap-2">
-                                    <select id="log-filter" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm focus:outline-none">
-                                        <option value="">All Logs</option>
-                                        <option value="error">Errors</option>
-                                        <option value="warning">Warnings</option>
-                                        <option value="info">Info</option>
-                                    </select>
-                                    <button onclick="App.refreshLogs()" class="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-slate-200 hover:bg-slate-700">
-                                        <i data-lucide="refresh-cw" class="h-4 w-4 inline mr-1"></i> Refresh
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-soft">
-                            <div id="logs-content" class="font-mono text-xs text-slate-300 max-h-96 overflow-y-auto bg-slate-950 rounded-lg p-4">
-                                <div class="text-center py-8 text-slate-400">
-                                    <p>No logs available</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- API Test Page -->
-                    <div id="page-api-test" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h2 class="text-2xl font-semibold text-white">API Endpoint Tests</h2>
-                                    <p class="text-sm text-slate-400">Test all available API endpoints to verify functionality.</p>
-                                </div>
-                                <button onclick="App.runAllApiTests()" class="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600">
-                                    <i data-lucide="play" class="h-4 w-4 inline mr-1"></i> Run All Tests
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-semibold">Test Results</h3>
-                                <div id="api-test-summary" class="text-sm text-slate-400">
-                                    Click "Run All Tests" to begin
-                                </div>
-                            </div>
-                            <div id="api-test-results" class="space-y-3">
-                                <div class="text-center py-12 text-slate-400">
-                                    <i data-lucide="flask-conical" class="h-12 w-12 mx-auto mb-3 opacity-50"></i>
-                                    <p>No tests run yet</p>
-                                    <p class="text-xs mt-2">Click "Run All Tests" to check all API endpoints</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Settings Page -->
-                    <div id="page-settings" class="page space-y-6">
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <h2 class="text-2xl font-semibold text-white">Settings</h2>
-                            <p class="text-sm text-slate-400">Configure your ShipPHP project.</p>
-                        </div>
-
-                        <div class="grid gap-6 lg:grid-cols-2">
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                                <h3 class="text-lg font-semibold mb-4">Profile Settings</h3>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Server URL</label>
-                                        <input type="text" id="settings-url" class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none" readonly>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Token</label>
-                                        <div class="flex gap-2">
-                                            <input type="password" id="settings-token" class="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-mono focus:border-indigo-500 focus:outline-none" readonly>
-                                            <button onclick="App.toggleTokenVisibility()" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:bg-slate-700">
-                                                <i data-lucide="eye" class="h-4 w-4"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                                <h3 class="text-lg font-semibold mb-4">Preferences</h3>
-                                <div class="space-y-3">
-                                    <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 p-3 cursor-pointer">
-                                        <span class="text-sm text-slate-300">Auto-refresh status</span>
-                                        <input type="checkbox" id="pref-auto-refresh" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500">
-                                    </label>
-                                    <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 p-3 cursor-pointer">
-                                        <span class="text-sm text-slate-300">Show notifications</span>
-                                        <input type="checkbox" id="pref-notifications" checked class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500">
-                                    </label>
-                                    <label class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-800/50 p-3 cursor-pointer">
-                                        <span class="text-sm text-slate-300">Confirm before push/pull</span>
-                                        <input type="checkbox" id="pref-confirm" checked class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500">
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 shadow-soft">
-                            <h3 class="text-lg font-semibold mb-4">Danger Zone</h3>
-                            <div class="flex gap-4">
-                                <button onclick="App.disconnectProject()" class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-200 hover:bg-rose-500/20">
-                                    <i data-lucide="unlink" class="h-4 w-4 inline mr-1"></i> Disconnect Project
-                                </button>
-                                <button onclick="App.rotateToken()" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-200 hover:bg-amber-500/20">
-                                    <i data-lucide="key" class="h-4 w-4 inline mr-1"></i> Rotate Token
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
-        </div>
-
-        <!-- Toast Container -->
-        <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2"></div>
-
-        <!-- Modal Container -->
-        <div id="modal-container" class="hidden fixed inset-0 z-50">
-            <div class="modal-backdrop absolute inset-0" onclick="App.closeModal()"></div>
-            <div class="absolute inset-0 flex items-center justify-center p-6 pointer-events-none">
-                <div id="modal-content" class="pointer-events-auto w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 shadow-2xl">
-                    <!-- Modal content will be injected here -->
+                        <h3 class="text-lg font-semibold text-white mb-1">Pull Changes</h3>
+                        <p class="text-sm text-slate-400">Download server changes locally</p>
+                    </button>
                 </div>
-            </div>
-        </div>
 
-        <!-- Global Progress Overlay -->
-        <div id="global-progress" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90">
-            <div class="text-center">
-                <div class="spinner h-12 w-12 mx-auto border-3 border-slate-600 border-t-indigo-500 rounded-full"></div>
-                <p id="global-progress-text" class="mt-4 text-lg text-white">Processing...</p>
-                <p id="global-progress-detail" class="mt-1 text-sm text-slate-400"></p>
-            </div>
+                <!-- Status Display -->
+                <div id="status-panel" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8">
+                    <h3 class="text-lg font-semibold text-white mb-4">Project Status</h3>
+                    <div id="status-content">
+                        <!-- Status will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Server Info -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Server Information</h3>
+                    <div id="server-info" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <!-- Server info will be loaded here -->
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+        <!-- Toasts will be added here -->
+    </div>
+
+    <script src="/app.js"></script>
 </body>
 </html>

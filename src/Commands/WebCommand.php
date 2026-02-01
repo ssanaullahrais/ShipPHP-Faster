@@ -26,9 +26,9 @@ class WebCommand extends BaseCommand
 
         // Check if initialized
         if (!file_exists(ProjectPaths::configFile())) {
-            $this->output->warning("No ShipPHP configuration found in this directory.");
-            $this->output->writeln("The web UI will still work but some features require initialization.");
-            $this->output->writeln("Run '" . $this->cmd('init') . "' first if you need deployment features.");
+            $this->output->info("Project not initialized in this directory.");
+            $this->output->writeln("The Web UI will show available profiles for connection.");
+            $this->output->writeln("You can also run '" . $this->cmd('init') . "' or '" . $this->cmd('login') . "' from the CLI.");
             $this->output->writeln();
         }
 
